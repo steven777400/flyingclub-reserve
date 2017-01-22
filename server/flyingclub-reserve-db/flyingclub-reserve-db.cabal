@@ -1,0 +1,46 @@
+name:                flyingclub-reserve-db
+version:             0.1.0.0
+synopsis:            Initial project template from stack
+description:         Please see README.md
+homepage:            https://github.com/githubuser/flyingclub-reserve-db#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Steve Kollmansberger
+maintainer:          steve@kolls.net
+copyright:           2017 Steve Kollmansberger
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Database.Persist.Schema,
+    Database.Persist.Session,
+    Database.Persist.Audit.Class,
+    Database.Persist.Audit.Operations,
+    Database.Persist.Owner.Class,
+    Database.Persist.Owner.Instances,
+    Database.Persist.Owner.Operations,
+    Database.Persist.Types.JSON,
+    Database.Persist.Types.PhoneNumber,
+    Database.Persist.Types.PIN,
+    Database.Persist.Types.UUID,
+    Database.Persist.Types.UserType
+  build-depends:       base >= 4.7 && < 5, exception-stacktrace,
+    aeson, text, uuid, persistent, persistent-template, path-pieces, http-api-data, bytestring, time, monad-logger, transformers, resourcet, scrypt, random, mtl
+  default-language:    Haskell2010
+
+test-suite flyingclub-reserve-db-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base, flyingclub-reserve-db, hspec,
+   aeson, text, uuid, persistent, persistent-template, path-pieces, http-api-data, bytestring, time, monad-logger, transformers, resourcet, random, mtl,
+   persistent-sqlite
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/githubuser/flyingclub-reserve-db
