@@ -139,6 +139,26 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 20) (15*60*60))
                 (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
             liftIO $ length r `shouldBe` 1
+  describe "getReservationsUser" $ do
+        it "gets only nondeleted reservations after now" $ runInDb $ \sd -> do
+          orig <- runAuthorizedAction (pilotUser sd) (
+            getReservationsUser (pilotUser sd))
+          rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
+          insertKey rk $ S.Reservation
+            (pilotUser sd) (n073 sd)
+            (UTCTime (fromGregorian 2016 01 20) (8*60*60))
+            (UTCTime (fromGregorian 2016 01 20) (10*60*60))
+            Nothing False ""
+          rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
+          insertKey rk $ S.Reservation
+            (pilotUser sd) (n073 sd)
+            (UTCTime (fromGregorian 2018 01 20) (8*60*60))
+            (UTCTime (fromGregorian 2018 01 20) (10*60*60))
+            (Just $ UTCTime (fromGregorian 2018 01 20) 0) False ""
+          r <- runAuthorizedAction (pilotUser sd) (
+            getReservationsUser (pilotUser sd))
+          liftIO $ length r `shouldBe` length orig
+
   describe "getReservationsDeleted" $ do
         it "disallows nonofficers" $ (runInDb $ \sd ->
             runAuthorizedAction (pilotUser sd) (
@@ -313,29 +333,47 @@ spec = do
         it "throws for na users" $ (runInDb $ \sd -> do
             runAuthorizedAction (naUser sd) (createReservation $ S.Reservation
               (naUser sd) (n073 sd)
-              (UTCTime (fromGregorian 2027 01 20) (8*60*60))
-              (UTCTime (fromGregorian 2027 01 20) (10*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (10*60*60))
               Nothing False "")
             ) `shouldThrow` anyUnauthorizedException
 
         it "throws for past start" $ (runInDb $ \sd -> do
             runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
               (officerUser sd) (n073 sd)
-              (UTCTime (fromGregorian 2016 01 20) (8*60*60))
-              (UTCTime (fromGregorian 2016 01 20) (10*60*60))
+              (UTCTime (fromGregorian 2016 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2016 01 19) (10*60*60))
               Nothing False "")
             ) `shouldThrow` anyConflictException
         it "throws for end before start" $ (runInDb $ \sd -> do
             runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
               (officerUser sd) (n073 sd)
-              (UTCTime (fromGregorian 2027 01 20) (8*60*60))
-              (UTCTime (fromGregorian 2026 01 20) (10*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2026 01 19) (10*60*60))
               Nothing False "")
             ) `shouldThrow` anyConflictException
         it "throws for deleted airplane" $ (runInDb $ \sd -> do
             runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
               (officerUser sd) (n666 sd)
-              (UTCTime (fromGregorian 2027 01 20) (8*60*60))
-              (UTCTime (fromGregorian 2027 01 20) (10*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (10*60*60))
               Nothing False "")
             ) `shouldThrow` anyException
+        it "disallows pilot to make maint res" $ (runInDb $ \sd -> do
+            runAuthorizedAction (pilotUser sd) (createReservation $ S.Reservation
+              (pilotUser sd) (n073 sd)
+              (UTCTime (fromGregorian 2027 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (10*60*60))
+              Nothing True "")
+            ) `shouldThrow` anyConflictException
+        it "allows officer to make maint res" $ runInDb $ \sd -> do
+            runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
+              (officerUser sd) (n073 sd)
+              (UTCTime (fromGregorian 2027 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (10*60*60))
+              Nothing True "")
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 19) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 19) (17*60*60)) )
+            liftIO $ length r `shouldBe` 1

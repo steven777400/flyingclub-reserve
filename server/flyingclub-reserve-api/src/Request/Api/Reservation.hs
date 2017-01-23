@@ -1,5 +1,5 @@
 module Request.Api.Reservation (
-  getReservations, getReservationsDeleted,
+  getReservations, getReservationsDeleted, getReservationsUser,
   createReservation) where
 
 import           Control.Exception.Conflict
@@ -41,6 +41,12 @@ getReservationsDeleted start end =
   authorize Officer $ const $ DB.selectList
     (makeReservationFilter start end) []
 
+getReservationsUser :: DB.Key S.User -> AuthorizedAction [DB.Entity S.Reservation]
+getReservationsUser userId =
+  authorize Social $ const $ do
+    now <- liftIO getCurrentTime
+    DB.selectList [notDeleted, S.ReservationEnd >. now] []
+
 
 createReservation :: S.Reservation -> AuthorizedAction (DB.Key S.Reservation)
 createReservation res =
@@ -60,6 +66,9 @@ createReservation res =
       getNotDeletedOrNotFound airplaneId
       -- user must not be deleted
       getNotDeletedOrNotFound userId
+      -- if maint type, user must be Officer
+      if S.reservationMaintenance res && S.userPermission (DB.entityVal user) < Officer
+        then throw (ConflictException "Only officer can create maintenance reservation") else return ()
       -- start a new transaction
       DB.transactionSave
       key <- insert userId res
