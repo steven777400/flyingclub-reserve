@@ -85,6 +85,12 @@ Reservation
     maintenance Bool
     comment     String
     deriving Show Generic
+Notification
+    Id          UUID
+    userId      UserId
+    posted      UTCTime
+    sent        UTCTime Maybe
+    content     String
 Session
     Id          UUID
     authKey     UUID

@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Database.Persist.Schema,
     Database.Persist.Session,
+    Database.Persist.Notification,
     Database.Persist.Audit.Class,
     Database.Persist.Audit.Operations,
     Database.Persist.Owner.Class,

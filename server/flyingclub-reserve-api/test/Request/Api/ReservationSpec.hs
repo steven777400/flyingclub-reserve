@@ -10,6 +10,7 @@ import           Data.Either
 import           Data.Time.Calendar
 import           Data.Time.Clock
 import qualified Database.Persist.Audit.Operations  as A
+import           Database.Persist.Notification
 import qualified Database.Persist.Schema            as S
 import           Database.Persist.Sqlite
 import           Database.Persist.Types.PhoneNumber
@@ -227,6 +228,8 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
             liftIO $ length r `shouldBe` 1
 
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 1
             -- do insert
             runAuthorizedAction (officerUser sd) (
               createReservation $ S.Reservation
@@ -242,6 +245,9 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
             liftIO $ length r `shouldBe` 2
 
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 1 -- no change!
+
             -- do insert
             runAuthorizedAction (officerUser sd) (
               createReservation $ S.Reservation
@@ -256,6 +262,9 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 21) (7*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
             liftIO $ length r `shouldBe` 3
+
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 2
         it "doesn't insert overlap reservation" $ runInDb $ \sd -> do
           -- do insert
           runAuthorizedAction (officerUser sd) (
@@ -330,6 +339,8 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
             liftIO $ length r `shouldBe` 1
 
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 0
         it "throws for na users" $ (runInDb $ \sd -> do
             runAuthorizedAction (naUser sd) (createReservation $ S.Reservation
               (naUser sd) (n073 sd)

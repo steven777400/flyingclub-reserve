@@ -7,6 +7,7 @@ import           Control.Exception.StackError
 import           Control.Monad.IO.Class            (liftIO)
 import           Data.Time.Clock
 import           Database.Persist.Audit.Operations
+import           Database.Persist.Notification
 import qualified Database.Persist.Schema           as S
 import           Database.Persist.Sql              ((<.), (==.), (>.))
 import qualified Database.Persist.Sql              as DB
@@ -79,6 +80,8 @@ createReservation res =
         then
           DB.transactionUndo >>
           throw (ConflictException "Another reservation already exists for that airplane at that time")
-        else return key
-
--- TODO send notification
+        else do
+          DB.transactionSave
+          let resUserId = S.reservationUserId res
+          if userId /= resUserId then sendNotification resUserId "TODO" else return ()
+          return key
