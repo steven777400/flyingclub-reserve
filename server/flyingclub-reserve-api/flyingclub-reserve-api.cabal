@@ -18,7 +18,7 @@ library
   exposed-modules:     Control.Exception.Unauthorized, Control.Exception.Conflict,
     Request.Api.AuthorizedAction, Request.Api.Hours, Request.Api.User, Request.Api.Reservation,
     Request.Parser.Day, Request.Parser.Time
-  other-modules:       Data.Time.Horizon, Request.Parser.Utility
+  other-modules:       Data.Time.Horizon, Request.Parser.Utility, Data.CreateOrUpdate
   build-depends:       base >= 4.7 && < 5, exception-stacktrace, flyingclub-reserve-db,
     aeson, mtl, persistent, text, attoparsec, time, timezone-series, AC-Angle
   default-language:    Haskell2010

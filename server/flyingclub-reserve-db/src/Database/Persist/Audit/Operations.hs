@@ -1,7 +1,8 @@
-{-# LANGUAGE ViewPatterns     #-}
+{-# LANGUAGE ViewPatterns #-}
 module Database.Persist.Audit.Operations (isDeleted, notDeleted,
   insert, delete, update, getOrNotFound, getNotDeletedOrNotFound, filterE) where
 
+import           Control.Exception.StackError
 import           Control.Monad.Trans
 import           Data.Aeson
 import           Data.Maybe                   (isJust)
@@ -12,8 +13,8 @@ import           Database.Persist.Schema
 import           Database.Persist.Sql         ((=.), (==.))
 import           Database.Persist.Types
 import           Database.Persist.Types.UUID
+import           Prelude                      hiding (error)
 import           System.Random
-
 
 genAuditKey :: SqlM (DB.Key Audit)
 genAuditKey = liftIO $ AuditKey <$> (randomIO :: IO UUID)
@@ -26,8 +27,9 @@ notDeleted = A.deleteField ==. Nothing
 isDeleted :: A.Audit a => a -> Bool
 isDeleted = isJust.(A.deleted)
 
+-- TODO replace, and replace must also ensure not deleted
 insert :: (A.Audit a) => DB.Key User -> a -> SqlM (DB.Key a)
-insert userid val = do
+insert userid val = if isDeleted val then error "can't insert deleted value" else do
     uuid <- liftIO (randomIO :: IO UUID)
     auditkey <- genAuditKey
     now <- liftIO getCurrentTime
