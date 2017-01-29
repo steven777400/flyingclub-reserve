@@ -27,7 +27,7 @@ notDeleted = A.deleteField ==. Nothing
 isDeleted :: A.Audit a => a -> Bool
 isDeleted = isJust.(A.deleted)
 
--- TODO replace, and replace must also ensure not deleted
+
 insert :: (A.Audit a) => DB.Key User -> a -> SqlM (DB.Key a)
 insert userid val = if isDeleted val then error "can't insert deleted value" else do
     uuid <- liftIO (randomIO :: IO UUID)

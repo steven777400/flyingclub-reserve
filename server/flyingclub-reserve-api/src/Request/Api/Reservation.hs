@@ -1,16 +1,15 @@
 module Request.Api.Reservation (
   getReservations, getReservationsDeleted, getReservationsUser,
-  createReservation) where
+  createReservation, updateReservation) where
 
 import           Control.Exception.Conflict
 import           Control.Exception.StackError
 import           Control.Monad.IO.Class            (liftIO)
-import           Data.CreateOrUpdate
 import           Data.Time.Clock
 import           Database.Persist.Audit.Operations
 import           Database.Persist.Notification
 import qualified Database.Persist.Schema           as S
-import           Database.Persist.Sql              ((<.), (==.), (>.))
+import           Database.Persist.Sql              ((<.), (==.), (>.), (=.))
 import qualified Database.Persist.Sql              as DB
 import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
@@ -50,56 +49,68 @@ getReservationsUser userId =
     now <- liftIO getCurrentTime
     DB.selectList [notDeleted, S.ReservationEnd >. now] []
 
+completeResTransaction :: DB.Key S.User -> S.Reservation -> S.SqlM ()
+completeResTransaction userId res =
+  let
+    airplaneId = S.reservationAirplaneId res
+    start = S.reservationStart res
+    end = S.reservationEnd res
+    resUserId = S.reservationUserId res
+  in do
+    overlap <- DB.count
+      ((S.ReservationAirplaneId ==. airplaneId):notDeleted:(makeReservationFilter start end))
+    -- should be exactly 1, the 1 we just inserted or updated
+    case overlap of
+      0 -> DB.transactionUndo >>
+        throw (ConflictException "Error insert/update reservation")
+      1 -> DB.transactionSave >>
+        if userId /= resUserId then sendNotification resUserId "TODO" else return ()
+      _ -> DB.transactionUndo >>
+        throw (ConflictException "Another reservation already exists for that airplane at that time")
+
 
 createReservation :: S.Reservation -> AuthorizedAction (DB.Key S.Reservation)
 createReservation res =
-  (authorize Officer $ createOrUpdateReservation res Create) <> -- officer creates for anyone
-  (authorizeUser (S.reservationUserId res) Pilot $ createOrUpdateReservation res Create) -- pilot creates for themselves
+  (authorize Officer cr) <> -- officer creates for anyone
+  (authorizeUser (S.reservationUserId res) Pilot cr) -- pilot creates for themselves
+  where cr user = let
+          airplaneId = S.reservationAirplaneId res
+          start = S.reservationStart res
+          end = S.reservationEnd res
+          userId = DB.entityKey user
+          resUserId = S.reservationUserId res
+          in do
+          -- reservation must be in the future, and end after start
+          now <- liftIO getCurrentTime
+          if start < now || end < now || end <= start then throw (ConflictException "Time must be in the future and end after start") else return ()
+          -- airplane must not be deleted
+          getNotDeletedOrNotFound airplaneId
+          -- user must not be deleted
+          getNotDeletedOrNotFound resUserId
+          -- if maint type, user must be Officer
+          if S.reservationMaintenance res && S.userPermission (DB.entityVal user) < Officer
+            then throw (ConflictException "Only officer can create maintenance reservation") else return ()
 
-
-
-createOrUpdateReservation :: S.Reservation -> CreateOrUpdate (DB.Key S.Reservation) -> DB.Entity S.User -> S.SqlM (DB.Key S.Reservation)
-createOrUpdateReservation res cou user = do
-  let airplaneId = S.reservationAirplaneId res
-  let start = S.reservationStart res
-  let end = S.reservationEnd res
-  let userId = DB.entityKey user
-  let resUserId = S.reservationUserId res
-  -- reservation must be in the future, and end after start
-  now <- liftIO getCurrentTime
-  if start < now || end < now || end <= start then throw (ConflictException "Time must be in the future and end after start") else return ()
-  -- airplane must not be deleted
-  getNotDeletedOrNotFound airplaneId
-  -- user must not be deleted
-  getNotDeletedOrNotFound resUserId
-  -- if maint type, user must be Officer
-  if S.reservationMaintenance res && S.userPermission (DB.entityVal user) < Officer
-    then throw (ConflictException "Only officer can create maintenance reservation") else return ()
-  -- additional validations for Update
-  case cou of
-    Create -> return ()
-    Update orig -> do
-      origRes <- DB.entityVal <$> getNotDeletedOrNotFound orig
-      -- if reservation currently start in past, then start cannot be changed
-      if S.reservationStart origRes < now then throw (ConflictException "If reservation currently start in past, then start cannot be changed") else return ()
-      -- reservation user cannot be changed
-      if S.reservationUserId origRes /= resUserId then throw (ConflictException "Reservation user cannot be changed") else return ()
-
-  -- start a new transaction
-  DB.transactionSave
-  key <- case cou of
-    Create      -> insert userId res
-    Update orig -> error "TODO" -- replace userId orig res
-
-  overlap <- DB.count
-    ((S.ReservationAirplaneId ==. airplaneId):notDeleted:(makeReservationFilter start end))
-  -- should be exactly 1, the 1 we just inserted
-  if overlap /= 1
-    then
-      DB.transactionUndo >>
-      throw (ConflictException "Another reservation already exists for that airplane at that time")
-    else do
-      DB.transactionSave
-      if userId /= resUserId then sendNotification resUserId "TODO" else return ()
-      return key
+          -- start a new transaction
+          DB.transactionSave
+          key <- insert userId res
+          completeResTransaction userId res
+          return key
 -- TODO maintenance should wipe out other reservations in the way
+
+
+-- we only allow update to change start and end time
+updateReservation :: DB.Entity S.Reservation -> UTCTime -> UTCTime -> AuthorizedAction ()
+updateReservation res start end =
+  (authorize Officer ur) <> -- officer updates for anyone
+  (authorizeUser (S.reservationUserId $ DB.entityVal res) Pilot ur) -- pilot updates for themselves
+  where
+    ur user = do
+      now <- liftIO getCurrentTime
+      if end < now || end <= start then throw (ConflictException "End time must be in future and after start") else return ()
+      if start < now && start /= S.reservationStart (DB.entityVal res) then throw (ConflictException "Start time in past cannot be changed") else return ()
+      -- start a new transaction
+      let userId = DB.entityKey user
+      DB.transactionSave
+      res' <- update userId (DB.entityKey res) [S.ReservationStart =. start, S.ReservationEnd =. end]
+      completeResTransaction userId res'

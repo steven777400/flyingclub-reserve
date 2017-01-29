@@ -35,7 +35,8 @@ data SampleData = SampleData {
   naUser      :: Key S.User,
   n073        :: Key S.Airplane,
   n349        :: Key S.Airplane,
-  n666        :: Key S.Airplane
+  n666        :: Key S.Airplane,
+  pilotRes    :: Entity S.Reservation
 
 }
 
@@ -55,11 +56,9 @@ runInDb sql = runSqlite ":memory:" $ do
     insertKey ia2 a2
     insertKey ia3 a3
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
-    insertKey rk $ S.Reservation
-      i2 ia1
-      (UTCTime (fromGregorian 2027 01 20) (8*60*60))
-      (UTCTime (fromGregorian 2027 01 20) (10*60*60))
-      Nothing False ""
+    let rkr = S.Reservation i2 ia1 (UTCTime (fromGregorian 2027 01 20) (8*60*60)) (UTCTime (fromGregorian 2027 01 20) (10*60*60)) Nothing False ""
+    insertKey rk rkr
+    let rk1 = Entity rk rkr
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
@@ -88,7 +87,7 @@ runInDb sql = runSqlite ":memory:" $ do
       (UTCTime (fromGregorian 2027 01 20) (9*60*60))
       (UTCTime (fromGregorian 2027 01 20) (11*60*60))
       Nothing False ""
-    sql (SampleData i1 i2 i3 ia1 ia2 ia3)
+    sql (SampleData i1 i2 i3 ia1 ia2 ia3 rk1)
 
 sampleOfficerUser = S.User "test1f" "test1l" "" Officer Nothing
 samplePilotUser = S.User "test1f" "test1l" "" Pilot Nothing
@@ -287,7 +286,7 @@ spec = do
               (UTCTime (fromGregorian 2027 01 21) (7*60*60))
               (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
           liftIO $ length r `shouldBe` 1
-        it "throws on overlap reservation" $ (runInDb $ \sd -> do
+        it "throws on create overlap reservation" $ (runInDb $ \sd -> do
             -- do insert
             runAuthorizedAction (officerUser sd) (
               createReservation $ S.Reservation
@@ -353,7 +352,7 @@ spec = do
             runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
               (officerUser sd) (n073 sd)
               (UTCTime (fromGregorian 2016 01 19) (8*60*60))
-              (UTCTime (fromGregorian 2016 01 19) (10*60*60))
+              (UTCTime (fromGregorian 2026 01 19) (10*60*60))
               Nothing False "")
             ) `shouldThrow` anyConflictException
         it "throws for end before start" $ (runInDb $ \sd -> do
@@ -388,3 +387,110 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 19) (7*60*60))
                 (UTCTime (fromGregorian 2027 01 19) (17*60*60)) )
             liftIO $ length r `shouldBe` 1
+  describe "updateReservation" $ do
+        it "officer updates for others" $ runInDb $ \sd -> do
+            n <- length <$> runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 20) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
+            -- do update
+            runAuthorizedAction (officerUser sd) (
+              updateReservation (pilotRes sd)
+                (UTCTime (fromGregorian 2027 01 22) (8*60*60))
+                (UTCTime (fromGregorian 2027 01 22) (10*60*60)))
+
+            -- confirm update
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 20) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
+            liftIO $ length r `shouldBe` (n-1)
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 22) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 22) (17*60*60)) )
+            liftIO $ length r `shouldBe` 1
+
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 1
+        it "doesn't update overlap reservation" $ runInDb $ \sd -> do
+          -- do insert
+          runAuthorizedAction (officerUser sd) (
+            createReservation $ S.Reservation
+              (pilotUser sd) (n073 sd)
+              (UTCTime (fromGregorian 2027 01 21) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 21) (10*60*60))
+              Nothing False "")
+          -- do update
+          ex <- (try (runAuthorizedAction (officerUser sd) (
+            updateReservation (pilotRes sd)
+              (UTCTime (fromGregorian 2027 01 21) (9*60*60))
+              (UTCTime (fromGregorian 2027 01 21) (11*60*60))
+              ))) :: S.SqlM (Either ConflictException ())
+          liftIO $ isLeft ex `shouldBe` True
+          -- confirm NO insert
+          r <- runAuthorizedAction (pilotUser sd) (
+            getReservations
+              (UTCTime (fromGregorian 2027 01 21) (7*60*60))
+              (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+          liftIO $ length r `shouldBe` 1
+        it "throws on update overlap reservation" $ (runInDb $ \sd -> do
+            -- do insert
+            runAuthorizedAction (officerUser sd) (
+              createReservation $ S.Reservation
+                (pilotUser sd) (n073 sd)
+                (UTCTime (fromGregorian 2027 01 21) (8*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (10*60*60))
+                Nothing False "")
+            -- do update
+            runAuthorizedAction (officerUser sd) (
+              updateReservation (pilotRes sd)
+                (UTCTime (fromGregorian 2027 01 21) (9*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (11*60*60))
+                )
+              ) `shouldThrow` anyConflictException
+        it "pilot updates for self only" $ runInDb $ \sd -> do
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 21) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+            liftIO $ length r `shouldBe` 0
+
+            -- do update
+            runAuthorizedAction (pilotUser sd) (
+              updateReservation
+                (pilotRes sd)
+                (UTCTime (fromGregorian 2027 01 21) (8*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (10*60*60))
+                )
+            -- confirm update
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 21) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+            liftIO $ length r `shouldBe` 1
+
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 0
+        it "throws for na users" $ (runInDb $ \sd -> do
+            runAuthorizedAction (naUser sd) (updateReservation
+              (pilotRes sd)
+              (UTCTime (fromGregorian 2027 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (10*60*60))
+              )
+            ) `shouldThrow` anyUnauthorizedException
+
+        it "throws for past start" $ (runInDb $ \sd -> do
+            runAuthorizedAction (officerUser sd) (updateReservation
+              (pilotRes sd)
+              (UTCTime (fromGregorian 2016 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (10*60*60))
+              )
+            ) `shouldThrow` anyConflictException
+        it "throws for end before start" $ (runInDb $ \sd -> do
+            runAuthorizedAction (officerUser sd) (updateReservation
+              (pilotRes sd)
+              (UTCTime (fromGregorian 2027 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2026 01 19) (10*60*60))
+              )
+            ) `shouldThrow` anyConflictException
