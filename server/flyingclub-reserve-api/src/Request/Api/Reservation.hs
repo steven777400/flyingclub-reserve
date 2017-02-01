@@ -2,6 +2,7 @@ module Request.Api.Reservation (
   getReservations, getReservationsDeleted, getReservationsUser,
   createReservation, updateReservation) where
 
+import Data.List (partition)
 import           Control.Exception.Conflict
 import           Control.Exception.StackError
 import           Control.Monad.IO.Class            (liftIO)
@@ -49,24 +50,34 @@ getReservationsUser userId =
     now <- liftIO getCurrentTime
     DB.selectList [notDeleted, S.ReservationEnd >. now] []
 
-completeResTransaction :: DB.Key S.User -> S.Reservation -> S.SqlM ()
-completeResTransaction userId res =
+completeResTransaction :: DB.Key S.User -> DB.Entity S.Reservation -> S.SqlM ()
+completeResTransaction userId (DB.Entity resId res) =
   let
-    airplaneId = S.reservationAirplaneId res
+    airplaneId = S.reservationAirplaneId $ res
     start = S.reservationStart res
     end = S.reservationEnd res
     resUserId = S.reservationUserId res
-  in do
-    overlap <- DB.count
-      ((S.ReservationAirplaneId ==. airplaneId):notDeleted:(makeReservationFilter start end))
-    -- should be exactly 1, the 1 we just inserted or updated    
-    case overlap of
-      0 -> DB.transactionUndo >>
-        throw (ConflictException "Error insert/update reservation")
-      1 -> DB.transactionSave >>
-        if userId /= resUserId then sendNotification resUserId "TODO" else return ()
-      _ -> DB.transactionUndo >>
-        throw (ConflictException "Another reservation already exists for that airplane at that time")
+  in if (S.reservationMaintenance res)
+      then do
+        overlap <- DB.selectList
+          ((S.ReservationAirplaneId ==. airplaneId):notDeleted:(makeReservationFilter start end)) []
+        let (mine, others) = partition (\r -> DB.entityKey r == resId) overlap
+        if length mine /= 1 then DB.transactionUndo >> throw (ConflictException "Error insert/update reservation") else return ()
+        mapM_ (\r -> delete userId (DB.entityKey r)) others
+        DB.transactionSave
+        mapM_ (\r -> sendNotification (S.reservationUserId $ DB.entityVal r) "TODO") others
+
+      else do
+        overlap <- DB.count
+          ((S.ReservationAirplaneId ==. airplaneId):notDeleted:(makeReservationFilter start end))
+        -- should be exactly 1, the 1 we just inserted or updated
+        case overlap of
+          0 -> DB.transactionUndo >>
+            throw (ConflictException "Error insert/update reservation")
+          1 -> DB.transactionSave >>
+            if userId /= resUserId then sendNotification resUserId "TODO" else return ()
+          _ -> DB.transactionUndo >>
+            throw (ConflictException "Another reservation already exists for that airplane at that time")
 
 
 createReservation :: S.Reservation -> AuthorizedAction (DB.Key S.Reservation)
@@ -94,7 +105,7 @@ createReservation res =
           -- start a new transaction
           DB.transactionSave
           key <- insert userId res
-          completeResTransaction userId res
+          completeResTransaction userId (DB.Entity key res)
           return key
 -- TODO maintenance should wipe out other reservations in the way
 
@@ -114,5 +125,5 @@ updateReservation resId start end =
       -- start a new transaction
       let userId = DB.entityKey user
       DB.transactionSave
-      res' <- update userId (DB.entityKey res) [S.ReservationStart =. start, S.ReservationEnd =. end]
-      completeResTransaction userId res'
+      res' <- update userId resId [S.ReservationStart =. start, S.ReservationEnd =. end]
+      completeResTransaction userId (DB.Entity resId res')

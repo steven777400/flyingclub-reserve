@@ -387,13 +387,34 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 19) (7*60*60))
                 (UTCTime (fromGregorian 2027 01 19) (17*60*60)) )
             liftIO $ length r `shouldBe` 1
+        it "allows officer to bulldoze others in maint res" $ runInDb $ \sd -> do
+            runAuthorizedAction (pilotUser sd) (
+              createReservation $ S.Reservation
+                (pilotUser sd) (n073 sd)
+                (UTCTime (fromGregorian 2027 01 19) (9*60*60))
+                (UTCTime (fromGregorian 2027 01 19) (11*60*60))
+                Nothing False "")
+            runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
+              (officerUser sd) (n073 sd)
+              (UTCTime (fromGregorian 2027 01 19) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 19) (10*60*60))
+              Nothing True "")
+
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 19) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 19) (17*60*60)) )
+            liftIO $ length r `shouldBe` 1
+
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 1
   describe "updateReservation" $ do
         it "officer updates for others" $ runInDb $ \sd -> do
             n <- length <$> runAuthorizedAction (pilotUser sd) (
               getReservations
                 (UTCTime (fromGregorian 2027 01 20) (7*60*60))
                 (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
-            -- do update            
+            -- do update
             runAuthorizedAction (officerUser sd) (
               updateReservation (pilotRes sd)
                 (UTCTime (fromGregorian 2027 01 22) (8*60*60))
@@ -449,6 +470,40 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 21) (11*60*60))
                 )
               ) `shouldThrow` anyConflictException
+        it "allows maint update to bulldoze" $ runInDb $ \sd -> do
+            -- do insert
+            res <- runAuthorizedAction (officerUser sd) (
+              createReservation $ S.Reservation
+                (officerUser sd) (n073 sd)
+                (UTCTime (fromGregorian 2027 01 21) (8*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (10*60*60))
+                Nothing True "")
+            runAuthorizedAction (pilotUser sd) (
+              createReservation $ S.Reservation
+                (pilotUser sd) (n073 sd)
+                (UTCTime (fromGregorian 2027 01 21) (10*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (12*60*60))
+                Nothing False "")
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 21) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+            liftIO $ length r `shouldBe` 2
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 0
+            -- do update
+            runAuthorizedAction (officerUser sd) (
+              updateReservation res
+                (UTCTime (fromGregorian 2027 01 21) (9*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (11*60*60))
+                )
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 21) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+            liftIO $ length r `shouldBe` 1
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 1
         it "pilot updates for self only" $ runInDb $ \sd -> do
             r <- runAuthorizedAction (pilotUser sd) (
               getReservations
