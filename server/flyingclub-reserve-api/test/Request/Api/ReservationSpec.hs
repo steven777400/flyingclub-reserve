@@ -36,7 +36,7 @@ data SampleData = SampleData {
   n073        :: Key S.Airplane,
   n349        :: Key S.Airplane,
   n666        :: Key S.Airplane,
-  pilotRes    :: Entity S.Reservation
+  pilotRes    :: Key S.Reservation
 
 }
 
@@ -58,7 +58,7 @@ runInDb sql = runSqlite ":memory:" $ do
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     let rkr = S.Reservation i2 ia1 (UTCTime (fromGregorian 2027 01 20) (8*60*60)) (UTCTime (fromGregorian 2027 01 20) (10*60*60)) Nothing False ""
     insertKey rk rkr
-    let rk1 = Entity rk rkr
+    let rk1 = rk
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
@@ -393,7 +393,7 @@ spec = do
               getReservations
                 (UTCTime (fromGregorian 2027 01 20) (7*60*60))
                 (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
-            -- do update
+            -- do update            
             runAuthorizedAction (officerUser sd) (
               updateReservation (pilotRes sd)
                 (UTCTime (fromGregorian 2027 01 22) (8*60*60))

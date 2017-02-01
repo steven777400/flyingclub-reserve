@@ -59,7 +59,7 @@ completeResTransaction userId res =
   in do
     overlap <- DB.count
       ((S.ReservationAirplaneId ==. airplaneId):notDeleted:(makeReservationFilter start end))
-    -- should be exactly 1, the 1 we just inserted or updated
+    -- should be exactly 1, the 1 we just inserted or updated    
     case overlap of
       0 -> DB.transactionUndo >>
         throw (ConflictException "Error insert/update reservation")
@@ -100,12 +100,14 @@ createReservation res =
 
 
 -- we only allow update to change start and end time
-updateReservation :: DB.Entity S.Reservation -> UTCTime -> UTCTime -> AuthorizedAction ()
-updateReservation res start end =
+updateReservation :: DB.Key S.Reservation -> UTCTime -> UTCTime -> AuthorizedAction ()
+updateReservation resId start end =
   (authorize Officer ur) <> -- officer updates for anyone
-  (authorizeUser (S.reservationUserId $ DB.entityVal res) Pilot ur) -- pilot updates for themselves
+  (authorizeUserM auth Pilot ur) -- pilot updates for themselves. We have to look up who that is, though!
   where
+    auth = getNotDeletedOrNotFound resId >>= return.(S.reservationUserId).(DB.entityVal)
     ur user = do
+      res <- getNotDeletedOrNotFound resId
       now <- liftIO getCurrentTime
       if end < now || end <= start then throw (ConflictException "End time must be in future and after start") else return ()
       if start < now && start /= S.reservationStart (DB.entityVal res) then throw (ConflictException "Start time in past cannot be changed") else return ()

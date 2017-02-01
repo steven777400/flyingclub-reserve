@@ -1,5 +1,5 @@
 module Request.Api.AuthorizedAction (AuthorizedAction,
-    authorize, authorizeCond, authorizeUser,
+    authorize, authorizeCond, authorizeUserM, authorizeUser,
     (<>),     -- re-export from Data.Semigroup
     runAuthorizedAction) where
 
@@ -11,26 +11,32 @@ import           Database.Persist.Schema
 import           Database.Persist.Types.UserType
 import           Prelude                         hiding (error)
 
-newtype AuthorizedAction o = AuthorizedAction (Entity User -> Maybe (SqlM o))
+newtype AuthorizedAction o = AuthorizedAction (Entity User -> SqlM (Maybe o))
 
-authorizeCond :: (Entity User -> Bool) -> (Entity User -> SqlM o) -> AuthorizedAction o
-authorizeCond authf act = AuthorizedAction $ \user ->
-    if authf user
-    then Just $ act user
-    else Nothing
+authorizeCond :: (Entity User -> SqlM Bool) -> (Entity User -> SqlM o) -> AuthorizedAction o
+authorizeCond authf act = AuthorizedAction $ \user -> do
+    auth <- authf user
+    if auth
+    then Just <$> act user
+    else return Nothing
 
 authorize :: UserType -> (Entity User -> SqlM o) -> AuthorizedAction o
 authorize userType = authorizeCond (\(Entity _ user) ->
-    userPermission user >= userType)
+    return $ userPermission user >= userType)
+
+authorizeUserM :: SqlM (Key User) -> UserType -> (Entity User -> SqlM o) -> AuthorizedAction o
+authorizeUserM reqUserIdM userType = authorizeCond (\(Entity actUserId user) -> reqUserIdM >>= \reqUserId ->
+    return $ reqUserId == actUserId && userPermission user >= userType)
+
 
 authorizeUser :: Key User -> UserType -> (Entity User -> SqlM o) -> AuthorizedAction o
-authorizeUser reqUserId userType = authorizeCond (\(Entity actUserId user) ->
-    reqUserId == actUserId && userPermission user >= userType)
+authorizeUser reqUserId = authorizeUserM (return reqUserId)
 
 instance Semigroup (AuthorizedAction a) where
-    (<>) (AuthorizedAction a1) (AuthorizedAction a2) = AuthorizedAction $ \euser ->
-        case a1 euser of
-            Just r1 -> Just r1  -- If the first request succeeds, take it
+    (<>) (AuthorizedAction a1) (AuthorizedAction a2) = AuthorizedAction $ \euser -> do
+        res <- a1 euser
+        case res of
+            Just r1 -> return $ Just r1  -- If the first request succeeds, take it
             Nothing -> a2 euser -- otherwise take the second request
 
 
@@ -38,7 +44,9 @@ runAuthorizedAction :: Key User -> AuthorizedAction o -> SqlM o
 runAuthorizedAction userId (AuthorizedAction auth) = do
     user <- get userId
     case user of
-        Just user' -> case auth (Entity userId user') of
-            Just r1 -> r1
+        Just user' -> do
+          res <- auth (Entity userId user')
+          case res of
+            Just r1 -> return r1
             Nothing -> throw UnauthorizedException
         Nothing -> error "User not found"
