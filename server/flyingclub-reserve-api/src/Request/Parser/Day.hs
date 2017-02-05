@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns      #-}
 module Request.Parser.Day (dayFromToday) where
 
-import Control.Applicative
-import Data.Attoparsec.Text
-import Data.Time.Calendar
-import Data.Time.Calendar.WeekDate
-import Request.Parser.Utility
+import           Control.Applicative
+import           Data.Attoparsec.Text
+import           Data.Time.Calendar
+import           Data.Time.Calendar.WeekDate
+import           Data.Time.Format            (defaultTimeLocale, wDays)
+import           Request.Parser.Utility
 
 tomorrow :: Parser (Day -> Day)
 tomorrow = pure (addDays 1) <* approxMatch "tomorrow"
@@ -20,19 +21,8 @@ daysToNext target (toWeekDate -> (_, _, weekday))
     | target == weekday = 0                         -- today!
     | otherwise         = (7 - weekday) + target    -- beginning of next week
 
---  day of week (1 for Monday to 7 for Sunday)
--- from https://hackage.haskell.org/package/time-1.6/docs/Data-Time-Calendar-WeekDate.html
-
 days :: [(Int, String)]
-days = [
-    (1, "monday"),
-    (2, "tuesday"),
-    (3, "wednesday"),
-    (4, "thursday"),
-    (5, "friday"),
-    (6, "saturday"),
-    (7, "sunday")
-    ]
+days = zip [0..] $ map fst (wDays defaultTimeLocale)
 
 dayOfWeek :: (Int, String) -> Parser (Day -> Day)
 dayOfWeek (val, str) = pure (\d -> addDays (toInteger $ daysToNext val d) d)
@@ -47,7 +37,7 @@ date' (requestMonth, requestDay) (toGregorian -> (startYear, startMonth, startDa
         else fromGregorianValid (startYear + 1) requestMonth requestDay -- otherwise next year, to avoid the past
     of
     Just actualDay -> actualDay
-    Nothing -> error "Invalid date"
+    Nothing        -> error "Invalid date"
 
 
 datep :: Parser Int -> Parser Int -> Parser (Day -> Day)

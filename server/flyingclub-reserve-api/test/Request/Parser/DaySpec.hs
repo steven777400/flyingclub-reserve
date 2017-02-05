@@ -1,18 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Request.Parser.DaySpec where
 
-import Control.Applicative
-import Data.Attoparsec.Text
+import           Data.Attoparsec.Text
 
-import Data.Time.Calendar
-import Data.Time.Calendar.WeekDate
-import Data.Time.Clock
-import Data.Time.LocalTime.TimeZone.Series
-import Data.Time.LocalTime.TimeZone.Olson
+import           Data.Time.Calendar
+import           Data.Time.Calendar.WeekDate
+import           Data.Time.Clock
+import           Data.Time.LocalTime.TimeZone.Olson
+import           Data.Time.LocalTime.TimeZone.Series
 
 
-import Test.Hspec
-import Request.Parser.Day
+import           Request.Parser.Day
+import           Test.Hspec
 
 -- 57445 = a saturday, 2/27/16, by utc
 originDay = ModifiedJulianDay 57445
@@ -28,14 +27,14 @@ testDay str add = do
     let day = parseOnly (dayFromToday <* endOfInput) str
     case day of
         Left err -> error err
-        Right f -> f originDay
+        Right f  -> f originDay
     `shouldBe` (addDays add originDay)
 
 testDay' str dayv = do
     let day = parseOnly (dayFromToday <* endOfInput) str
     case day of
         Left err -> error err
-        Right f -> f originDay
+        Right f  -> f originDay
     `shouldBe` dayv
 
 spec :: Spec
@@ -69,4 +68,4 @@ spec = do
         it "handles next year md" $ testDay' "0105" (fromGregorian 2017 1 5)
         it "handles next year mdd" $ testDay' "0110" (fromGregorian 2017 1 10)
         it "handles next year mmd" $ testDay' "0205" (fromGregorian 2017 2 5)
-        it "handles next year mmdd" $ testDay' "0215" (fromGregorian 2017 2 15)        
+        it "handles next year mmdd" $ testDay' "0215" (fromGregorian 2017 2 15)
