@@ -1,10 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
-module Data.Time.Friendly (formatDay) where
+{-# LANGUAGE RecordWildCards #-}
+module Data.Time.Friendly (formatDay, formatTime) where
 
-import Data.Time.Calendar
-import Data.Time.Calendar.WeekDate
-import Data.Time.Format (TimeLocale, defaultTimeLocale, wDays, months)
-import Data.String.Interpolate
+import           Data.String.Interpolate
+import           Data.Time.Calendar
+import           Data.Time.Calendar.WeekDate
+import           Data.Time.Format            (TimeLocale, defaultTimeLocale,
+                                              months, wDays)
+import           Data.Time.LocalTime
 
 {--
 i considered using Data.Time.Format but it didn't have the support
@@ -59,3 +62,12 @@ formatDay today day   | today == day              = "today"
                       | addDays 1 today == day    = "tomorrow"
                       | year today == year day    = [i|#{formatWeekDay day}, #{formatMonth day} #{formatDayN day}|]
                       | otherwise                 = [i|#{formatWeekDay day}, #{formatMonth day} #{formatDayN day}, #{year day}|]
+
+formatTime :: TimeOfDay -> String
+formatTime tod@TimeOfDay{..} = [i|#{hour}:#{minutePad}#{todMin} #{ampm}|]
+  where
+    hour = case todHour `mod` 12 of
+      0 -> 12
+      x -> x
+    minutePad = if todMin < 10 then "0" else ""
+    ampm = if todHour < 12 then "AM" else "PM"

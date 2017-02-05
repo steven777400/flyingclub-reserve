@@ -1,17 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
 module Request.Api.Reservation (
   getReservations, getReservationsDeleted, getReservationsUser,
-  createReservation, updateReservation) where
+  createReservation, updateReservation, deleteReservation) where
 
-import Data.List (partition)
 import           Control.Exception.Conflict
 import           Control.Exception.StackError
 import           Control.Monad.IO.Class            (liftIO)
+import           Data.List                         (partition)
 import           Data.Time.Clock
 import           Database.Persist.Audit.Operations
 import           Database.Persist.Notification
 import qualified Database.Persist.Schema           as S
-import           Database.Persist.Sql              ((<.), (==.), (>.), (=.))
+import           Database.Persist.Sql              ((<.), (=.), (==.), (>.))
 import qualified Database.Persist.Sql              as DB
 import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
@@ -122,4 +122,23 @@ updateReservation resId start end =
       DB.transactionSave
       res' <- update userId resId [S.ReservationStart =. start, S.ReservationEnd =. end]
       completeResTransaction userId (DB.Entity resId res')
+      if userId /= reservationUserId then sendNotification reservationUserId "TODO" else return ()
+
+deleteReservation :: DB.Key S.Reservation -> AuthorizedAction ()
+deleteReservation resId =
+  (authorize Officer ur) <> -- officer deletes for anyone
+  (authorizeUserM auth Pilot ur) -- pilot deletes for themselves. We have to look up who that is, though!
+  where
+    auth = getNotDeletedOrNotFound resId >>= return.(S.reservationUserId).(DB.entityVal)
+    ur user = (DB.entityVal <$> getNotDeletedOrNotFound resId) >>= updateRes user
+    updateRes user res@S.Reservation{..} = do
+      now <- liftIO getCurrentTime
+      let userId = DB.entityKey user
+      DB.transactionSave
+      if reservationEnd < now then
+        throw (ConflictException "Can't delete reservation that is already ended") else return ()
+      if reservationStart < now then
+          update userId resId [S.ReservationEnd =. now] >> return ()
+      else
+          delete userId resId
       if userId /= reservationUserId then sendNotification reservationUserId "TODO" else return ()

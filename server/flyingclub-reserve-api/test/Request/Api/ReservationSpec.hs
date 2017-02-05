@@ -36,7 +36,8 @@ data SampleData = SampleData {
   n073        :: Key S.Airplane,
   n349        :: Key S.Airplane,
   n666        :: Key S.Airplane,
-  pilotRes    :: Key S.Reservation
+  pilotRes    :: Key S.Reservation,
+  officerRes  :: Key S.Reservation
 
 }
 
@@ -66,6 +67,7 @@ runInDb sql = runSqlite ":memory:" $ do
       (UTCTime (fromGregorian 2027 01 20) (12*60*60))
       (UTCTime (fromGregorian 2027 01 20) (15*60*60))
       Nothing False ""
+    let ork = rk
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
@@ -87,7 +89,7 @@ runInDb sql = runSqlite ":memory:" $ do
       (UTCTime (fromGregorian 2027 01 20) (9*60*60))
       (UTCTime (fromGregorian 2027 01 20) (11*60*60))
       Nothing False ""
-    sql (SampleData i1 i2 i3 ia1 ia2 ia3 rk1)
+    sql (SampleData i1 i2 i3 ia1 ia2 ia3 rk1 ork)
 
 sampleOfficerUser = S.User "test1f" "test1l" "" Officer Nothing
 samplePilotUser = S.User "test1f" "test1l" "" Pilot Nothing
@@ -527,6 +529,19 @@ spec = do
 
             n <- getPendingNotifications
             liftIO $ length n `shouldBe` 0
+
+            ex <- (try (runAuthorizedAction (pilotUser sd) (
+              updateReservation (officerRes sd)
+                (UTCTime (fromGregorian 2027 02 21) (9*60*60))
+                (UTCTime (fromGregorian 2027 02 21) (11*60*60))
+                ))) :: S.SqlM (Either UnauthorizedException ())
+            liftIO $ isLeft ex `shouldBe` True
+            -- confirm NO update
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 02 21) (7*60*60))
+                (UTCTime (fromGregorian 2027 02 21) (17*60*60)) )
+            liftIO $ length r `shouldBe` 0
         it "throws for na users" $ (runInDb $ \sd -> do
             runAuthorizedAction (naUser sd) (updateReservation
               (pilotRes sd)
@@ -549,3 +564,97 @@ spec = do
               (UTCTime (fromGregorian 2026 01 19) (10*60*60))
               )
             ) `shouldThrow` anyConflictException
+  describe "deleteReservation" $ do
+        it "officer deletes for others" $ runInDb $ \sd -> do
+            n <- length <$> runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 20) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
+            -- do update
+            runAuthorizedAction (officerUser sd) (
+              deleteReservation (pilotRes sd))
+
+            -- confirm update
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 20) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
+            liftIO $ length r `shouldBe` (n-1)
+
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 1
+
+        it "pilot deletes for self only" $ runInDb $ \sd -> do
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 21) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+            liftIO $ length r `shouldBe` 0
+
+            -- do update
+            runAuthorizedAction (pilotUser sd) (
+              deleteReservation
+                (pilotRes sd))
+            -- confirm update
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 21) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+            liftIO $ length r `shouldBe` 0
+
+            n <- getPendingNotifications
+            liftIO $ length n `shouldBe` 0
+
+
+            n <- length <$> runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 20) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+
+            ex <- (try (runAuthorizedAction (pilotUser sd) (
+              deleteReservation (officerRes sd)
+                ))) :: S.SqlM (Either UnauthorizedException ())
+            liftIO $ isLeft ex `shouldBe` True
+            -- confirm NO delete
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2027 01 20) (7*60*60))
+                (UTCTime (fromGregorian 2027 01 21) (17*60*60)) )
+            liftIO $ length r `shouldBe` n
+        it "throws for na users" $ (runInDb $ \sd -> do
+            runAuthorizedAction (naUser sd) (deleteReservation
+              (pilotRes sd)
+              )
+            ) `shouldThrow` anyUnauthorizedException
+
+        it "throws for past end" $ (runInDb $ \sd -> do
+            rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
+            insertKey rk $ S.Reservation
+              (pilotUser sd) (n073 sd)
+              (UTCTime (fromGregorian 2016 01 20) (8*60*60))
+              (UTCTime (fromGregorian 2016 01 20) (10*60*60))
+              Nothing False ""
+            runAuthorizedAction (officerUser sd) (deleteReservation
+              rk
+              )
+            ) `shouldThrow` anyConflictException
+        it "truncates past start" $ runInDb $ \sd -> do
+            rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
+            insertKey rk $ S.Reservation
+              (pilotUser sd) (n073 sd)
+              (UTCTime (fromGregorian 2016 01 20) (8*60*60))
+              (UTCTime (fromGregorian 2027 01 20) (10*60*60))
+              Nothing False ""
+            runAuthorizedAction (officerUser sd) (deleteReservation
+              rk
+              )
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2016 01 20) (7*60*60))
+                (UTCTime (fromGregorian 2016 01 20) (17*60*60)) )
+            liftIO $ length r `shouldBe` 1
+            r <- runAuthorizedAction (pilotUser sd) (
+              getReservations
+                (UTCTime (fromGregorian 2026 01 20) (7*60*60))
+                (UTCTime (fromGregorian 2026 01 20) (17*60*60)) )
+            liftIO $ length r `shouldBe` 0

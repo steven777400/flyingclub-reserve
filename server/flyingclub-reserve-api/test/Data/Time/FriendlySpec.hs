@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.Time.FriendlySpec where
 
-import Data.Time.Calendar
-import Data.Time.Calendar.WeekDate
-import Data.Time.Clock
+import           Data.Time.Calendar
+import           Data.Time.Calendar.WeekDate
+import           Data.Time.Clock
+import           Data.Time.LocalTime
 
-import Test.Hspec
-import Data.Time.Friendly
+import           Data.Time.Friendly
+import           Test.Hspec
 
 -- 57445 = a saturday, 2/27/16, by utc
 originDay = ModifiedJulianDay 57445
@@ -28,3 +29,13 @@ spec = do
         it "identify ordinal multi-digit 21st" $ formatDay originDay (addDays 23 originDay) `shouldBe` "Monday, March 21st"
         it "identify future month" $ formatDay originDay (addDays 300 originDay) `shouldBe` "Friday, December 23rd"
         it "identify future year" $ formatDay originDay (addDays 320 originDay) `shouldBe` "Thursday, January 12th, 2017"
+    describe "formatTime" $ do
+        it "handles midnight" $ formatTime midnight `shouldBe` "12:00 AM"
+        it "handles noon" $ formatTime midday `shouldBe` "12:00 PM"
+        it "handles 0005" $ formatTime (TimeOfDay 0 5 0) `shouldBe` "12:05 AM"
+        it "handles 0015" $ formatTime (TimeOfDay 0 15 0) `shouldBe` "12:15 AM"
+        it "handles 0900" $ formatTime (TimeOfDay 9 0 0) `shouldBe` "9:00 AM"
+        it "handles 0905" $ formatTime (TimeOfDay 9 05 0) `shouldBe` "9:05 AM"
+        it "handles 1205" $ formatTime (TimeOfDay 12 05 0) `shouldBe` "12:05 PM"
+        it "handles 1345" $ formatTime (TimeOfDay 13 45 0) `shouldBe` "1:45 PM"
+        it "handles 2359" $ formatTime (TimeOfDay 23 59 0) `shouldBe` "11:59 PM"
