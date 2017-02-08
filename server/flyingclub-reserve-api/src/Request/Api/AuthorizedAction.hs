@@ -7,9 +7,10 @@ import           Control.Exception.StackError
 import           Control.Exception.Unauthorized
 import           Data.Semigroup
 import           Database.Persist
+import           Database.Persist.Audit.Operations
 import           Database.Persist.Schema
 import           Database.Persist.Types.UserType
-import           Prelude                         hiding (error)
+import           Prelude                           hiding (error)
 
 newtype AuthorizedAction o = AuthorizedAction (Entity User -> SqlM (Maybe o))
 
@@ -42,11 +43,8 @@ instance Semigroup (AuthorizedAction a) where
 
 runAuthorizedAction :: Key User -> AuthorizedAction o -> SqlM o
 runAuthorizedAction userId (AuthorizedAction auth) = do
-    user <- get userId
-    case user of
-        Just user' -> do
-          res <- auth (Entity userId user')
-          case res of
-            Just r1 -> return r1
-            Nothing -> throw UnauthorizedException
-        Nothing -> error "User not found"
+    user <- getOrNotFound userId
+    res <- auth user
+    case res of
+      Just r1 -> return r1
+      Nothing -> throw UnauthorizedException
