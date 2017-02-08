@@ -1,14 +1,15 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric              #-}
 module Database.Persist.Types.PhoneNumber (PhoneNumber, toMaybePhoneNumber, toPhoneNumber, unPhoneNumber) where
 
+import           Control.Exception.Format
 import           Control.Exception.StackError
-import           Database.Persist.Sql
-import Data.Aeson
-import Data.Text.Encoding
+import           Data.Aeson
 import           Data.ByteString
-import qualified Data.ByteString.Char8 as C8
+import qualified Data.ByteString.Char8        as C8
 import           Data.Char
+import           Data.Text.Encoding
+import           Database.Persist.Sql
 import           GHC.Generics
 import           Prelude                      hiding (error)
 
@@ -17,20 +18,20 @@ newtype PhoneNumber = PhoneNumber ByteString
 
 toMaybePhoneNumber :: ByteString -> Maybe PhoneNumber
 toMaybePhoneNumber ph   | C8.length digits == 10    = Just $ PhoneNumber digits
-                        | C8.length digits == 11 && C8.head digits == '1' 
+                        | C8.length digits == 11 && C8.head digits == '1'
                                                     = Just $ PhoneNumber (C8.tail digits)
                         | otherwise = Nothing
     where digits = C8.filter isDigit ph
 
-    
+
 toPhoneNumber :: ByteString -> PhoneNumber
 toPhoneNumber ph = case (toMaybePhoneNumber ph) of
     Just p -> p
-    Nothing -> error "PhoneNumber must be ten digits or 1+ten digits"                                            
+    Nothing -> throw $ FormatException "PhoneNumber must be ten digits or 1+ten digits"
 
 
 unPhoneNumber :: PhoneNumber -> ByteString
-unPhoneNumber (PhoneNumber ph) = (areacode `C8.snoc` '-') `C8.append` 
+unPhoneNumber (PhoneNumber ph) = (areacode `C8.snoc` '-') `C8.append`
                                 (prefix `C8.snoc` '-') `C8.append`
                                 number
         where   (areacode,rest) = C8.splitAt 3 ph
@@ -46,7 +47,7 @@ instance FromJSON PhoneNumber where
 
 instance ToJSON PhoneNumber where
     toJSON (PhoneNumber pn) = ((String).decodeUtf8) pn
-    
+
 instance PersistField PhoneNumber where
   toPersistValue (PhoneNumber ph) = PersistByteString ph
 

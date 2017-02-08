@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Control.Exception.Unauthorized, Control.Exception.Conflict,
+  exposed-modules:     
     Data.Time.Friendly,
     Request.Api.AuthorizedAction, Request.Api.Hours, Request.Api.User, Request.Api.Reservation,
     Request.Parser.Day, Request.Parser.Time

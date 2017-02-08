@@ -1,16 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns      #-}
 module Request.Parser.Time (timeFromNow) where
 
-import Control.Applicative
-import Data.Attoparsec.Text
-import qualified Data.Text as T
-import Data.Time.Calendar
-import Data.Time.Clock
-import Data.Time.LocalTime
-import Data.Time.LocalTime.TimeZone.Series
-import Request.Parser.Day
-import Request.Parser.Utility
+import           Control.Applicative
+import           Control.Exception.Format
+import           Control.Exception.StackError
+import           Data.Attoparsec.Text
+import qualified Data.Text                           as T
+import           Data.Time.Calendar
+import           Data.Time.Clock
+import           Data.Time.LocalTime
+import           Data.Time.LocalTime.TimeZone.Series
+import           Request.Parser.Day
+import           Request.Parser.Utility
 
 h12 :: Int -> Int
 h12 hour = if hour == 12 then 0 else hour
@@ -48,7 +50,7 @@ localTimeFromNow = do
         in
         if isValidLocalTime tz local
         then localTimeToUTC' tz local
-        else error "Invalid local time"
+        else throw $ FormatException "Invalid local time"
 
 utcTimeFromNow :: Parser (ZoneSeriesTime -> UTCTime)
 utcTimeFromNow = do
@@ -65,7 +67,7 @@ utcTimeFromNow = do
                 else fromGregorianValid (startYear + 1) 1 day
         of
         Just actualDay -> UTCTime actualDay (secondsToDiffTime.toInteger $ hour*60*60 + minute*60)
-        Nothing -> error "Invalid date"
+        Nothing -> throw $ FormatException "Invalid date"
 
 timeFromNow :: Parser (ZoneSeriesTime -> UTCTime)
 timeFromNow = localTimeFromNow <|> utcTimeFromNow

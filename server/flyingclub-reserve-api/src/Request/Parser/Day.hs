@@ -3,6 +3,8 @@
 module Request.Parser.Day (dayFromToday) where
 
 import           Control.Applicative
+import           Control.Exception.StackError
+import           Control.Exception.Format
 import           Data.Attoparsec.Text
 import           Data.Time.Calendar
 import           Data.Time.Calendar.WeekDate
@@ -37,7 +39,7 @@ date' (requestMonth, requestDay) (toGregorian -> (startYear, startMonth, startDa
         else fromGregorianValid (startYear + 1) requestMonth requestDay -- otherwise next year, to avoid the past
     of
     Just actualDay -> actualDay
-    Nothing        -> error "Invalid date"
+    Nothing        -> throw $ FormatException "Invalid date"
 
 
 datep :: Parser Int -> Parser Int -> Parser (Day -> Day)
