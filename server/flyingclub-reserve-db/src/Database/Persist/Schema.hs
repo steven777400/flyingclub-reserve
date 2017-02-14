@@ -137,8 +137,8 @@ runAdjustedMigration = getAdjustedMigration >>= mapM_ (flip rawExecute [])
 -- END BEGIN MOVE
 
 
-instance ToJSON a => ToJSON (Entity a) where
-    toJSON (Entity key val) = toJSON val
+instance (PersistEntity a, ToJSON a) => ToJSON (Entity a) where
+    toJSON = entityIdToJSON
 
 instance ToJSON User where
 instance FromJSON User where

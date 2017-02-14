@@ -1,3 +1,10 @@
+{-# LANGUAGE RankNTypes           #-}
 module Data.ReserveRoute where
 
-data ReserveRoute = ReserveRoute -- TODO Context
+import Database.Persist.Schema
+
+
+
+data ReserveRoute = ReserveRoute {
+  sql :: forall a.SqlM a -> IO a
+}

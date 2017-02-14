@@ -1,12 +1,31 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Data.ReserveRoute
-import Web.Application
-import Web.Route
-import Network.Wai
-import qualified Network.Wai.Handler.Warp       as Warp (run)
+import           Control.Monad.Trans
+import           Data.ReserveRoute
+import qualified Database.Persist.Audit.Operations   as A
+import           Database.Persist.Environment.Sqlite
+import           Database.Persist.Schema
+import           Database.Persist.Sql
+import           Database.Persist.Types.PIN
+import           Database.Persist.Types.UserType
+import           Database.Persist.Types.UUID
+import           Network.Wai
+import qualified Network.Wai.Handler.Warp            as Warp (run)
+import           System.Random
+import           Web.Application
+import           Web.Route
 
+insertDevData :: SqlM ()
+insertDevData = do
+  i1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
+  insertKey i1 $ User "Steve" "Kollmansberger" "" Officer Nothing
+  A.insert i1 $ Email i1 "home" "steve@kolls.net" True True Nothing
+  a1 <- liftIO $ AuthenticationKey <$> (randomIO :: IO UUID)
+  insertKey a1 $ Authentication i1 0 (toPIN "1234")
 
+-- TODO LOL this won't work, need the db on the outside so its consistent
+dev :: IO ()
+dev = Warp.run 8080 $ application $ ReserveRoute (\sql -> runInDb $ insertDevData >> sql)
 
-main :: IO ()
-main = Warp.run 8080 $ application ReserveRoute
+main = dev

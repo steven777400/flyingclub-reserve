@@ -10,6 +10,7 @@ import Data.ReserveRoute
 import Database.Persist.Schema
 import Network.HTTP.Types
 import Wai.Routes
+import Web.Session
 
 
 
@@ -22,4 +23,3 @@ mkRoute "ReserveRoute" [parseRoutes|
 
 getUsersR = undefined
 getUserR x = undefined
-postLoginR = undefined

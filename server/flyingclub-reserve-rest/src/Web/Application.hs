@@ -10,4 +10,4 @@ application ctx = do
   --middleware logStdoutDev
   --middleware errorHandler
   --middleware $ checkCreds pool userkey
-  waiApp $ route $ ReserveRoute -- ctx
+  waiApp $ route $ ctx
