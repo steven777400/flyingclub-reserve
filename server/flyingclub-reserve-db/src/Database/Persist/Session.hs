@@ -70,7 +70,7 @@ login username password = do
 
 getValidSession :: Key Session -> SqlM (Maybe (Entity Session))
 getValidSession sessionId = do
-  msession <- get sessionId
+  msession <- get sessionId  
   case msession of
     Nothing -> return Nothing
     Just session -> if sessionExpired session == Nothing

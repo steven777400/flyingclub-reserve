@@ -17,7 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Data.ReserveRoute, Web.Application, Web.Route, Web.Session
   build-depends:       base >= 4.7 && < 5,
-    wai, http-types, wai-routes, wai-extra, mtl, persistent,
+    wai, http-types, wai-routes, wai-extra, mtl, persistent, bytestring, text,
     flyingclub-reserve-api, exception-stacktrace, flyingclub-reserve-db
   default-language:    Haskell2010
 
@@ -35,6 +35,8 @@ test-suite flyingclub-reserve-rest-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base >= 4.7 && < 5,
+    warp, wai, mtl, persistent, random, aeson, time, persistent-sqlite, wai-extra, http-types, bytestring,
+    hspec, hspec-wai,
     flyingclub-reserve-rest, flyingclub-reserve-api, exception-stacktrace, flyingclub-reserve-db
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010

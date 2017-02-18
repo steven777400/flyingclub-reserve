@@ -1,25 +1,26 @@
-{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE ViewPatterns #-}
 module Web.Session (postLoginR) where
 
 import           Control.Monad.Trans
+import           Data.ByteString
 import           Data.ReserveRoute
+import qualified Data.Text.Encoding              as E
 import           Database.Persist.Schema
 import qualified Database.Persist.Session        as S
 import           Database.Persist.Sql
+import           Database.Persist.Types.UUID
 import           Network.HTTP.Types
 import           Network.Wai.Middleware.HttpAuth
 import           Wai.Routes
-import Data.ByteString
-import           Web.PathPieces
-import qualified Data.Text.Encoding as E
 
 handleLogin :: ByteString -> SqlM (Maybe (Entity Session))
 handleLogin (extractBasicAuth -> Just (username, password))
   = S.login username password
-handleLogin (\x -> extractBearerAuth x >>= (fromPathPiece.(E.decodeUtf8)) -> Just token)
+handleLogin (\x -> extractBearerAuth x >>= return.keyFromValues.(:[]).(PersistText).(E.decodeUtf8) -> Just (Right token))
   = S.getValidSession token
 handleLogin _ = return Nothing
 
+-- TODO: needs tests
 postLoginR :: Handler ReserveRoute
 postLoginR = runHandlerM $ do
     ReserveRoute sql <- sub
@@ -29,5 +30,5 @@ postLoginR = runHandlerM $ do
       Just auth -> do
         session <- liftIO $ sql $ handleLogin auth
         case session of
-            Just session -> json session
+            Just session -> json session -- TODO include user info
             Nothing      -> status status401
