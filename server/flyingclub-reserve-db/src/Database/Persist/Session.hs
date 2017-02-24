@@ -1,6 +1,7 @@
 module Database.Persist.Session (login, getValidSession, logout, logoutAll) where
 
 import           Control.Exception.StackError
+import           Control.Monad
 import           Control.Monad.Trans
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
@@ -30,15 +31,11 @@ verifyPassword userId password = do
   auth <- fromJust <$> getBy (AuthUserId userId)
   let correctpin = verifyPIN password (authenticationPin (entityVal auth))
   -- if not correct pin, increment bad login count
-  if not correctpin
-    then update (entityKey auth) [AuthenticationFailedLoginCount +=. 1]
-    else return ()
+  when (not correctpin) $ update (entityKey auth) [AuthenticationFailedLoginCount +=. 1]
   -- regardless, if not correct or too many bad attempts, abort
   let allow = authenticationFailedLoginCount (entityVal auth) < lockOnFailedLogins && correctpin
   -- if allowed, reset bad login count
-  if allow
-    then update (entityKey auth) [AuthenticationFailedLoginCount =. 0]
-    else return ()
+  when allow $ update (entityKey auth) [AuthenticationFailedLoginCount =. 0]
   return allow
 
 login :: ByteString -> ByteString -> SqlM (Maybe (Entity Session))
@@ -70,7 +67,7 @@ login username password = do
 
 getValidSession :: Key Session -> SqlM (Maybe (Entity Session))
 getValidSession sessionId = do
-  msession <- get sessionId  
+  msession <- get sessionId
   case msession of
     Nothing -> return Nothing
     Just session -> if sessionExpired session == Nothing
