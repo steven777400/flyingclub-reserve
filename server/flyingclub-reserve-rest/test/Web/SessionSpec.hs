@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Web.SessionSpec where
 
-import           Control.Monad.Trans
+import Control.Monad (when)
+import Control.Monad.Logger
 import           Data.Aeson
 import           Data.Aeson.Types
 import           Data.ByteString                    (append)
@@ -15,20 +16,18 @@ import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
 import           Network.HTTP.Types.Header
 import           Network.HTTP.Types.Method
-import           System.Random
-
-import           Data.ReserveRoute
+import           Network.Wai
 import           Network.Wai.Test                   (simpleBody)
+import           System.Random
 import           Test.Hspec
 import           Test.Hspec.Wai
+import System.Directory
+
+import           Data.ReserveRoute
 import           Web.Application
 import qualified Web.Session                        as S
 
-runInDb :: SqlPersistM a -> IO a
-runInDb sql = runSqlite ":memory:" $ do
-    runAdjustedMigration
-    prepDb
-    sql
+
 
 sampleUser1 = User "test1f" "test1l" "" Officer Nothing
 sampleUser2 = User "test2f" "test2l" "" Social Nothing
@@ -57,8 +56,24 @@ prepDb = do
 
 -- see https://github.com/hspec/hspec-wai#readme
 
+
+
+
+app :: IO Application
+app = do
+
+  putStrLn "start"
+  doesFileExist "test.sqlite" >>= flip when (removeFile "test.sqlite")
+  runNoLoggingT $ withSqlitePool "test.sqlite" 1 $ \pool -> liftIO $ do
+    (flip runSqlPersistMPool) pool $ do
+      runAdjustedMigration
+      liftIO $ putStrLn "prep"
+      prepDb
+
+    return $ application $ ReserveRoute (\x -> runSqlPersistMPool x pool)
+
 spec :: Spec
-spec = with (return $ application $ ReserveRoute runInDb) $ do
+spec = with app $ do
     describe "POST /login" $ do
         it "rejects no credentials" $
             post "/login" "" `shouldRespondWith` 401
@@ -78,8 +93,11 @@ spec = with (return $ application $ ReserveRoute runInDb) $ do
           r1 <- request methodPost  "/login" [(hAuthorization, "Basic c3RldmVAa29sbHMubmV0OjEyMzQ=")] ""
           let (Just json1) = decode (simpleBody r1) :: Maybe Object
           let (Just sid) = parseMaybe (\o -> o .: "id") json1 :: Maybe String
+          srbs <- liftIO $ (randomIO :: IO UUID)
+          request methodPost  "/login" [(hAuthorization, append "Bearer " (pack $ show srbs))] "" `shouldRespondWith` 401
+
           request methodPost  "/login" [(hAuthorization, append "Bearer " (pack sid))] "" `shouldRespondWith` 200
-          -- TODO: it's eturning nothing on the db session lookup, same problem as dev, the db is recycling each cmd
+
 
           --let (Just sr1) = decode (simpleBody r1) :: Maybe (Entity Session)
 
