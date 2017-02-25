@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Web.SessionSpec where
+module Web.Api.SessionSpec where
 
 import           Control.Monad                            (when)
 import           Control.Monad.Logger
@@ -27,7 +27,7 @@ import           Data.ReserveRoute
 import qualified Database.Persist.Environment.Environment as DBE
 import           Database.Persist.Environment.Sqlite
 import           Web.Application
-import qualified Web.Session                              as S
+import qualified Web.Api.Session                              as S
 
 
 sampleUser1 = User "test1f" "test1l" "" Officer Nothing

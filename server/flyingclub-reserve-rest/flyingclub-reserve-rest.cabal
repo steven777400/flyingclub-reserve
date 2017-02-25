@@ -15,9 +15,10 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Data.ReserveRoute, Web.Application, Web.Route, Web.Session
+  exposed-modules:     Data.ReserveRoute, Web.Application, Web.Authentication, Web.ErrorHandler, Web.Route,
+    Web.Api.Session, Web.Api.User
   build-depends:       base >= 4.7 && < 5,
-    wai, http-types, wai-routes, wai-extra, mtl, persistent, bytestring, text,
+    wai, http-types, wai-routes, wai-extra, mtl, persistent, bytestring, text, aeson,
     flyingclub-reserve-api, exception-stacktrace, flyingclub-reserve-db
   default-language:    Haskell2010
 
