@@ -28,10 +28,11 @@ library
     Database.Persist.Types.PIN,
     Database.Persist.Types.UUID,
     Database.Persist.Types.UserType,
+    Database.Persist.Environment.Environment,
     Database.Persist.Environment.Sqlite
   build-depends:       base >= 4.7 && < 5, exception-stacktrace,
     aeson, text, uuid, persistent, persistent-template, path-pieces, http-api-data, bytestring, time, monad-logger, transformers, resourcet, scrypt, random, mtl,
-    persistent-sqlite
+    persistent-sqlite, directory
   default-language:    Haskell2010
 
 test-suite flyingclub-reserve-db-test

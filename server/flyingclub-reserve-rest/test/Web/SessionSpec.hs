@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Web.SessionSpec where
 
-import Control.Monad (when)
-import Control.Monad.Logger
+import           Control.Monad                            (when)
+import           Control.Monad.Logger
 import           Data.Aeson
 import           Data.Aeson.Types
-import           Data.ByteString                    (append)
-import           Data.ByteString.Char8              (pack)
+import           Data.ByteString                          (append)
+import           Data.ByteString.Char8                    (pack)
 import           Data.Maybe
 import           Database.Persist.Schema
 import           Database.Persist.Sqlite
@@ -17,16 +17,17 @@ import           Database.Persist.Types.UUID
 import           Network.HTTP.Types.Header
 import           Network.HTTP.Types.Method
 import           Network.Wai
-import           Network.Wai.Test                   (simpleBody)
+import           Network.Wai.Test                         (simpleBody)
+import           System.Directory
 import           System.Random
 import           Test.Hspec
 import           Test.Hspec.Wai
-import System.Directory
 
 import           Data.ReserveRoute
+import qualified Database.Persist.Environment.Environment as DBE
+import           Database.Persist.Environment.Sqlite
 import           Web.Application
-import qualified Web.Session                        as S
-
+import qualified Web.Session                              as S
 
 
 sampleUser1 = User "test1f" "test1l" "" Officer Nothing
@@ -61,16 +62,9 @@ prepDb = do
 
 app :: IO Application
 app = do
-
-  putStrLn "start"
-  doesFileExist "test.sqlite" >>= flip when (removeFile "test.sqlite")
-  runNoLoggingT $ withSqlitePool "test.sqlite" 1 $ \pool -> liftIO $ do
-    (flip runSqlPersistMPool) pool $ do
-      runAdjustedMigration
-      liftIO $ putStrLn "prep"
-      prepDb
-
-    return $ application $ ReserveRoute (\x -> runSqlPersistMPool x pool)
+  db <- runInDb
+  (DBE.sql db) prepDb
+  return $ application $ ReserveRoute (DBE.sql db) id
 
 spec :: Spec
 spec = with app $ do
@@ -93,19 +87,32 @@ spec = with app $ do
           r1 <- request methodPost  "/login" [(hAuthorization, "Basic c3RldmVAa29sbHMubmV0OjEyMzQ=")] ""
           let (Just json1) = decode (simpleBody r1) :: Maybe Object
           let (Just sid) = parseMaybe (\o -> o .: "id") json1 :: Maybe String
+          let (Just userid1) = parseMaybe (\o -> o .: "sessionUserId") json1 :: Maybe String
           srbs <- liftIO $ (randomIO :: IO UUID)
           request methodPost  "/login" [(hAuthorization, append "Bearer " (pack $ show srbs))] "" `shouldRespondWith` 401
 
           request methodPost  "/login" [(hAuthorization, append "Bearer " (pack sid))] "" `shouldRespondWith` 200
 
+          r2 <- request methodPost  "/login" [(hAuthorization, append "Bearer " (pack sid))] ""
+          let (Just json2) = decode (simpleBody r2) :: Maybe Object
+          let (Just sid2) = parseMaybe (\o -> o .: "id") json2 :: Maybe String
+          let (Just userid2) = parseMaybe (\o -> o .: "sessionUserId") json2 :: Maybe String
+          liftIO $ sid2 `shouldBe` sid
+          liftIO $ userid2 `shouldBe` userid1
 
-          --let (Just sr1) = decode (simpleBody r1) :: Maybe (Entity Session)
-
-          --
-            {--
         it "distinguishes login" $ do
           -- steve@kolls.net 1234
           r1 <- request methodPost  "/login" [(hAuthorization, "Basic c3RldmVAa29sbHMubmV0OjEyMzQ=")] ""
-          liftIO $ putStrLn $ show $ (decode (simpleBody r1) :: Maybe Session)
---}
--- TODO need to include user in session resp
+          let (Just json1) = decode (simpleBody r1) :: Maybe Object
+          let (Just userid1) = parseMaybe (\o -> o .: "sessionUserId") json1 :: Maybe String
+          -- user@example.com 9876
+          r2 <- request methodPost  "/login" [(hAuthorization, "Basic dXNlckBleGFtcGxlLmNvbTo5ODc2")] ""
+          let (Just json2) = decode (simpleBody r2) :: Maybe Object
+          let (Just userid2) = parseMaybe (\o -> o .: "sessionUserId") json2 :: Maybe String
+          liftIO $ userid1 `shouldNotBe` userid2
+
+          -- steve@kolls.net 1234
+          r3 <- request methodPost  "/login" [(hAuthorization, "Basic c3RldmVAa29sbHMubmV0OjEyMzQ=")] ""
+          let (Just json3) = decode (simpleBody r3) :: Maybe Object
+          let (Just userid3) = parseMaybe (\o -> o .: "sessionUserId") json3 :: Maybe String
+          liftIO $ userid1 `shouldBe` userid3

@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE RecordWildCards #-}
 module Web.Session (postLoginR) where
 
 import           Control.Monad.Trans
@@ -23,7 +24,7 @@ handleLogin _ = return Nothing
 -- TODO: needs tests
 postLoginR :: Handler ReserveRoute
 postLoginR = runHandlerM $ do
-    ReserveRoute sql <- sub
+    ReserveRoute{..} <- sub
     authHeader <- lookup hAuthorization <$> reqHeaders
     case authHeader of
       Nothing -> status status401

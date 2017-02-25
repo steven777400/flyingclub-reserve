@@ -1,13 +1,13 @@
 module Web.Application where
 
-import Data.ReserveRoute
-import Web.Route
-import Network.Wai
-import Wai.Routes
+import           Data.ReserveRoute
+import           Network.Wai
+import           Wai.Routes
+import           Web.Route
 
 application :: ReserveRoute -> Application
-application ctx = do
-  --middleware logStdoutDev
+application ctx = waiApp $ do
+  middleware (logger ctx)
   --middleware errorHandler
   --middleware $ checkCreds pool userkey
-  waiApp $ route $ ctx
+  route $ ctx
