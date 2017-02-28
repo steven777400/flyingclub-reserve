@@ -15,10 +15,10 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     
-    Data.Time.Friendly,
+  exposed-modules:
+    Data.Time.Friendly, Data.ParsedAction
     Request.Api.AuthorizedAction, Request.Api.Hours, Request.Api.User, Request.Api.Reservation,
-    Request.Parser.Day, Request.Parser.Time
+    Request.Parser.Day, Request.Parser.Time, Request.Parser.Reservation
   other-modules:       Data.Time.Horizon, Request.Parser.Utility
   build-depends:       base >= 4.7 && < 5, exception-stacktrace, flyingclub-reserve-db,
     aeson, mtl, persistent, text, attoparsec, time, timezone-series, AC-Angle, interpolate

@@ -10,5 +10,4 @@ application :: ReserveRoute -> Application
 application ctx = waiApp $ do
   middleware (logger ctx)
   middleware errorHandler
-  --middleware $ checkCreds pool userkey
-  route $ ctx
+  route ctx
