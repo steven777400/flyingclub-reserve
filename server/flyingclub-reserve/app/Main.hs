@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import qualified Database.Persist.MySQL          as MP
@@ -24,7 +25,7 @@ devUser = runStderrLoggingT $ MP.withMySQLPool devConnStr 10 $ \pool -> liftIO $
     flip MP.runSqlPersistMPool pool $ do
         MP.getMigration migrateAll -- just to force type
         u1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
-        MP.insertKey u1 $ User "Steve" "K" "" Officer Nothing
+        MP.insertKey u1 $ User "Steve" "K" Officer Nothing
         e1 <- liftIO $ EmailKey <$> (randomIO :: IO UUID)
         MP.insertKey e1 $ Email u1 "" "steve@kolls.net" True True Nothing
 

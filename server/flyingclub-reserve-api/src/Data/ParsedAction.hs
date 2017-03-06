@@ -1,6 +1,6 @@
 module Data.ParsedAction where
 
-import Data.Text
+import           Data.Text
 import           Data.Time.Calendar
 
 data ParsedAction =

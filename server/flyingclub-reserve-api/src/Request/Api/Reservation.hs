@@ -1,11 +1,12 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Request.Api.Reservation (
   getReservations, getReservationsDeleted, getReservationsUser,
   createReservation, updateReservation, deleteReservation) where
 
 import           Control.Exception.Conflict
 import           Control.Exception.StackError
-import Control.Monad
+import           Control.Monad
 import           Control.Monad.IO.Class            (liftIO)
 import           Data.List                         (partition)
 import           Data.Time.Clock

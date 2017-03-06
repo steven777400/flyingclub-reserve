@@ -25,10 +25,10 @@ runInDb sql = runSqlite ":memory:" $ do
     S.runAdjustedMigration
     sql
 
-sampleOfficerUser = S.User "test1f" "test1l" "" Officer Nothing
-samplePilotUser = S.User "test1f" "test1l" "" Pilot Nothing
-sampleSocialUser = S.User "test1f" "test1l" "" Social Nothing
-sampleNAUser = S.User "test1f" "test1l" "" NoAccess Nothing
+sampleOfficerUser = S.User "test1f" "test1l" Officer Nothing
+samplePilotUser = S.User "test1f" "test1l" Pilot Nothing
+sampleSocialUser = S.User "test1f" "test1l" Social Nothing
+sampleNAUser = S.User "test1f" "test1l" NoAccess Nothing
 
 sampleAllowAddr userId = S.Address userId "allow test" "" "" "" True Nothing
 sampleDisallowAddr userId = S.Address userId "disallow test" "" "" "" False Nothing

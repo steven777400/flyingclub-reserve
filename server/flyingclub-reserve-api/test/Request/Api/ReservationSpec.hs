@@ -91,10 +91,10 @@ runInDb sql = runSqlite ":memory:" $ do
       Nothing False ""
     sql (SampleData i1 i2 i3 ia1 ia2 ia3 rk1 ork)
 
-sampleOfficerUser = S.User "test1f" "test1l" "" Officer Nothing
-samplePilotUser = S.User "test1f" "test1l" "" Pilot Nothing
-sampleSocialUser = S.User "test1f" "test1l" "" Social Nothing
-sampleNAUser = S.User "test1f" "test1l" "" NoAccess Nothing
+sampleOfficerUser = S.User "test1f" "test1l" Officer Nothing
+samplePilotUser = S.User "test1f" "test1l" Pilot Nothing
+sampleSocialUser = S.User "test1f" "test1l" Social Nothing
+sampleNAUser = S.User "test1f" "test1l" NoAccess Nothing
 
 a1 = S.Airplane "54073" "cessna 172" Nothing
 a2 = S.Airplane "52349" "cessna 182" Nothing

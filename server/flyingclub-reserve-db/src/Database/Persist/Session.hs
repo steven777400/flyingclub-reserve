@@ -6,21 +6,21 @@ import           Control.Monad.Trans
 import           Control.Monad.Trans.Reader
 import           Data.Aeson
 import           Data.ByteString                    (ByteString)
-import qualified Data.ByteString.Char8              as C8
 import           Data.List                          (nub)
 import           Data.Maybe                         (fromJust)
+import           Data.Text.Encoding
 import           Data.Time.Clock
+import           Database.Persist.Audit.Operations  (isDeleted)
 import           Database.Persist.Class
 import           Database.Persist.Schema
 import           Database.Persist.Sql
 import           Database.Persist.Types
 import qualified Database.Persist.Types.PhoneNumber as PN
 import           Database.Persist.Types.PIN
+import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
 import           Prelude                            hiding (error)
 import           System.Random
-
-type OriginHost = String
 
 lockOnFailedLogins :: Int
 lockOnFailedLogins = 10
@@ -41,7 +41,7 @@ verifyPassword userId password = do
 login :: ByteString -> ByteString -> SqlM (Maybe (Entity Session))
 login username password = do
     emails <-
-         (map (emailUserId.entityVal)) <$> ((selectList [EmailAddress ==. (C8.unpack username)] []) :: SqlM [Entity Email])
+         (map (emailUserId.entityVal)) <$> ((selectList [EmailAddress ==. decodeUtf8 username] []) :: SqlM [Entity Email])
     phones <- case PN.toMaybePhoneNumber username of
         Just pn ->
            (map (phoneUserId.entityVal)) <$> ((selectList [PhoneNumber ==. pn] []) :: SqlM [Entity Phone])
@@ -49,9 +49,13 @@ login username password = do
 
     case nub (emails++phones) of
         [userId] -> do
+            user <- get userId
+            let validUser = case user of
+                  Nothing -> False
+                  Just u  -> not (isDeleted u) && userPermission u /= NoAccess
             -- verify password
             allow <- verifyPassword userId password
-            if not allow
+            if (not allow) || (not validUser)
               then return Nothing
               else do
                 -- CREATE session

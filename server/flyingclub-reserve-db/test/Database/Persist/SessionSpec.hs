@@ -21,8 +21,9 @@ runInDb sql = runSqlite ":memory:" $ do
     runAdjustedMigration
     sql
 
-sampleUser1 = User "test1f" "test1l" "" Officer Nothing
-sampleUser2 = User "test2f" "test2l" "" Social Nothing
+sampleUser1 = User "test1f" "test1l" Officer Nothing
+sampleUser2 = User "test2f" "test2l" Social Nothing
+sampleUser3 = User "test3f" "test3l" NoAccess Nothing
 
 prepDb = do
     i1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
@@ -44,7 +45,15 @@ prepDb = do
     a2 <- liftIO $ AuthenticationKey <$> (randomIO :: IO UUID)
     insertKey a2 $ Authentication i2 0 (toPIN "9876")
 -- pin 9876
-    return (i1, i2)
+
+    i3 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
+    insertKey i3 sampleUser3
+    e3 <- liftIO $ EmailKey <$> (randomIO :: IO UUID)
+    insertKey e3 $ Email i3 "" "na@example.com" True True Nothing
+    a3 <- liftIO $ AuthenticationKey <$> (randomIO :: IO UUID)
+    insertKey a3 $ Authentication i3 0 (toPIN "9876")
+    -- pin 9876
+    return (i1, i2, i3)
 
 spec :: Spec
 spec = do
@@ -60,7 +69,7 @@ spec = do
             session <- S.login "" ""
             liftIO $ isNothing session `shouldBe` True
         it "rejects wrong pw" $ runInDb $ do
-            (i1, i2) <- prepDb
+            (i1, i2, _) <- prepDb
             auth <- entityVal <$> fromJust <$> getBy (AuthUserId i1)
             liftIO $ authenticationFailedLoginCount auth `shouldBe` 0
             session <- S.login "steve@kolls.net" ""
@@ -72,7 +81,7 @@ spec = do
             auth <- entityVal <$> fromJust <$> getBy (AuthUserId i1)
             liftIO $ authenticationFailedLoginCount auth `shouldBe` 2
         it "accepts right pw" $ runInDb $ do
-            (i1, i2) <- prepDb
+            (i1, i2, _) <- prepDb
             auth <- entityVal <$> fromJust <$> getBy (AuthUserId i1)
             liftIO $ authenticationFailedLoginCount auth `shouldBe` 0
             session <- S.login "steve@kolls.net" "1234"
@@ -89,7 +98,7 @@ spec = do
             auth <- entityVal <$> fromJust <$> getBy (AuthUserId i1)
             liftIO $ authenticationFailedLoginCount auth `shouldBe` 0
         it "locks out accounts" $ runInDb $ do
-            (i1, i2) <- prepDb
+            (i1, i2, _) <- prepDb
             auth <- entityVal <$> fromJust <$> getBy (AuthUserId i1)
             liftIO $ authenticationFailedLoginCount auth `shouldBe` 0
             session <- S.login "steve@kolls.net" "12345"
@@ -113,7 +122,7 @@ spec = do
             auth <- entityVal <$> fromJust <$> getBy (AuthUserId i1)
             liftIO $ authenticationFailedLoginCount auth `shouldBe` 10
         it "gets valid sessions" $ runInDb $ do
-            (i1, i2) <- prepDb
+            (i1, i2, _) <- prepDb
             (Just s1) <- S.login "steve@kolls.net" "1234"
             (Just s2) <- S.login "steve@kolls.net" "1234"
             s1' <- S.getValidSession (entityKey s1)
@@ -124,7 +133,7 @@ spec = do
             liftIO $ toJSON s2 `shouldBe` toJSON s2'
             liftIO $ toJSON s1 `shouldNotBe` toJSON s2
         it "handles logout" $ runInDb $ do
-            (i1, i2) <- prepDb
+            (i1, i2, _) <- prepDb
             (Just s1a) <- S.login "steve@kolls.net" "1234"
             (Just s1b) <- S.login "steve@kolls.net" "1234"
             (Just s2) <- S.login "user@example.com" "9876"
@@ -142,7 +151,7 @@ spec = do
             liftIO $ isNothing s1b' `shouldBe` True
             liftIO $ isNothing s2' `shouldBe` False
         it "handles logoutAll" $ runInDb $ do
-            (i1, i2) <- prepDb
+            (i1, i2, _) <- prepDb
             (Just s1a) <- S.login "steve@kolls.net" "1234"
             (Just s1b) <- S.login "steve@kolls.net" "1234"
             (Just s2) <- S.login "user@example.com" "9876"
@@ -159,3 +168,12 @@ spec = do
             liftIO $ isNothing s1a' `shouldBe` True
             liftIO $ isNothing s1b' `shouldBe` True
             liftIO $ isNothing s2' `shouldBe` False
+        it "refuses na users" $ runInDb $ do
+            (i1, i2, i3) <- prepDb
+            s3a <- S.login "na@example.com" "9876"
+            liftIO $ isNothing s3a `shouldBe` True
+        it "refuses deleted users" $ runInDb $ do
+            (i1, i2, i3) <- prepDb
+            delete i1
+            s1a <- S.login "steve@kolls.net" "1234"
+            liftIO $ isNothing s1a `shouldBe` True

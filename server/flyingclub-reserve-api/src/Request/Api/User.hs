@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Request.Api.User where
+module Request.Api.User (UserDetails(..),
+  getUsers, getUserDetails) where
 
 import           Control.Monad.Trans
 import           Data.Aeson

@@ -30,8 +30,8 @@ import           Web.Application
 import qualified Web.Api.Session                              as S
 
 
-sampleUser1 = User "test1f" "test1l" "" Officer Nothing
-sampleUser2 = User "test2f" "test2l" "" Social Nothing
+sampleUser1 = User "test1f" "test1l" Officer Nothing
+sampleUser2 = User "test2f" "test2l" Social Nothing
 
 prepDb = do
     i1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)

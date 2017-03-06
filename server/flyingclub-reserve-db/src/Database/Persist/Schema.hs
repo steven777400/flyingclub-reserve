@@ -29,27 +29,26 @@ import           GHC.Generics
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User
     Id          UUID
-    firstname   String
-    lastname    String
-    title       String
+    firstname   T.Text
+    lastname    T.Text
     permission  UserType
     deleted     UTCTime Maybe
     deriving Show Generic
 Address
     Id          UUID
     userId      UserId
-    address     String
-    city        String
-    state       String
-    zip         String
+    address     T.Text
+    city        T.Text
+    state       T.Text
+    zip         T.Text
     showInDirectory  Bool
     deleted     UTCTime Maybe
     deriving Show Generic
 Email
     Id          UUID
     userId      UserId
-    description String
-    address     String
+    description T.Text
+    address     T.Text
     receiveNotification  Bool
     showInDirectory  Bool
     deleted     UTCTime Maybe
@@ -57,7 +56,7 @@ Email
 Phone
     Id          UUID
     userId      UserId
-    description String
+    description T.Text
     number      PhoneNumber
     receiveSms  Bool
     showInDirectory  Bool
@@ -71,8 +70,8 @@ Authentication
     pin         PIN
 Airplane
     Id          UUID
-    tail        String
-    description String
+    tail        T.Text
+    description T.Text
     deleted     UTCTime Maybe
     deriving Show Generic
 Reservation
@@ -83,14 +82,14 @@ Reservation
     end         UTCTime
     deleted     UTCTime Maybe
     maintenance Bool
-    comment     String
+    comment     T.Text
     deriving Show Generic
 Notification
     Id          UUID
     userId      UserId
     posted      UTCTime
     sent        UTCTime Maybe
-    content     String
+    content     T.Text
 Session
     Id          UUID
     authKey     UUID
@@ -98,14 +97,6 @@ Session
     created     UTCTime
     used        UTCTime
     expired     UTCTime Maybe
-    deriving Show Generic
-SecurityAudit
-    Id          UUID
-    sessionId   SessionId Maybe
-    kind        String
-    username    String
-    originHost  String
-    when        UTCTime
     deriving Show Generic
 Audit
     Id          UUID

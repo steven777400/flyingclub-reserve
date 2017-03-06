@@ -1,6 +1,7 @@
 module Database.Persist.Notification (sendNotification, getPendingNotifications) where
 
 import           Control.Monad.IO.Class      (liftIO)
+import qualified Data.Text                   as T
 import           Data.Time.Clock
 import qualified Database.Persist.Schema     as S
 import           Database.Persist.Sql        ((<.), (==.), (>.))
@@ -12,7 +13,7 @@ import           System.Random
 getPendingNotifications :: S.SqlM [DB.Entity S.Notification]
 getPendingNotifications = DB.selectList [S.NotificationSent ==. Nothing] []
 
-sendNotification :: DB.Key S.User -> String -> S.SqlM ()
+sendNotification :: DB.Key S.User -> T.Text -> S.SqlM ()
 sendNotification userId content = do
   uuid <- liftIO (randomIO :: IO UUID)
   now <- liftIO getCurrentTime

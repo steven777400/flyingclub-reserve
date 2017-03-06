@@ -18,7 +18,7 @@ runInDb sql = runSqlite ":memory:" $ do
     runAdjustedMigration
     sql
 
-sampleUser = User "test1f" "test1l" "" Officer Nothing
+sampleUser = User "test1f" "test1l" Officer Nothing
 
 spec :: Spec
 spec = do

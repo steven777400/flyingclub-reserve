@@ -21,7 +21,7 @@ import           Web.Route
 insertDevData :: SqlM ()
 insertDevData = do
   i1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
-  insertKey i1 $ User "Steve" "Kollmansberger" "" Officer Nothing
+  insertKey i1 $ User "Steve" "Kollmansberger" Officer Nothing
   A.insert i1 $ Email i1 "home" "steve@kolls.net" True True Nothing
   a1 <- liftIO $ AuthenticationKey <$> (randomIO :: IO UUID)
   insertKey a1 $ Authentication i1 0 (toPIN "1234")
