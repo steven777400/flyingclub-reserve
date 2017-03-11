@@ -54,6 +54,17 @@ spec = do
         testTime zst "reserve 077 tomorrow 4pm to 3/1 11am" $ Reserve "077" (addUTCTime (36*60*60) utcOrigin) (addUTCTime ((7+72)*60*60) utcOrigin)
         testTime zst "Reserve 078 0227 1100 until 0227 1600" $ Reserve "078" (addUTCTime (7*60*60) utcOrigin) (addUTCTime (12*60*60) utcOrigin)
         testTime zst "RESERVE 079 Tuesday 7am to Thursday 5pm" $ Reserve "079" (addUTCTime ((3+72)*60*60) utcOrigin) (addUTCTime ((13+120)*60*60) utcOrigin)
+  describe "cancel" $ do
+      it "cancel for time" $ do
+        zst <- getzst
+        testTime zst "cancel 073 11am" $ Cancel (Just "073") (addUTCTime (7*60*60) utcOrigin)
+        testTime zst "cancel 073 today 11am" $ Cancel (Just "073") (addUTCTime (7*60*60) utcOrigin)
+        testTime zst "cancel 075 2/27 11am" $ Cancel (Just "075") (addUTCTime (7*60*60) utcOrigin)
+        testTime zst "Cancel 077 tomorrow 4pm" $ Cancel (Just "077") (addUTCTime (36*60*60) utcOrigin)
+        testTime zst "CANCEL 078 0227 1100" $ Cancel (Just "078") (addUTCTime (7*60*60) utcOrigin)
+      it "quick cancel" $ do
+        zst <- getzst
+        testTime zst "cancel" $ Cancel Nothing utcOrigin
 
   describe "check" $ do
       it "defaults to today" $ do
@@ -66,3 +77,24 @@ spec = do
       it "accepts date" $ do
         zst <- getzst
         testTime zst "Check N54073 Monday" $ Check "N54073" (addDays 2 originDay)
+        testTime zst "Check N54073 3/1" $ Check "N54073" (addDays 3 originDay)
+  describe "review" $ do
+      it "defaults to today" $ do
+        zst <- getzst
+        testTime zst "review" $ Review originDay
+      it "accepts relative date" $ do
+        zst <- getzst
+        testTime zst "Review today" $ Review originDay
+        testTime zst "Review tomorrow" $ Review (addDays 1 originDay)
+      it "accepts date" $ do
+        zst <- getzst
+        testTime zst "Review Monday" $ Review (addDays 2 originDay)
+        testTime zst "Review 3/1" $ Review (addDays 3 originDay)
+  describe "update" $ do
+      it "update or extend for time" $ do
+        zst <- getzst
+        testTime zst "update 11am" $ Update (addUTCTime (7*60*60) utcOrigin)
+        testTime zst "extend today 11am" $ Update (addUTCTime (7*60*60) utcOrigin)
+        testTime zst "update 2/27 11am" $ Update (addUTCTime (7*60*60) utcOrigin)
+        testTime zst "Extend tomorrow 4pm" $ Update (addUTCTime (36*60*60) utcOrigin)
+        testTime zst "UPDATE 0227 1100" $ Update (addUTCTime (7*60*60) utcOrigin)

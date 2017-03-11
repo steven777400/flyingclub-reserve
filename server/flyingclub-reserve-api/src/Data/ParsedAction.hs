@@ -8,5 +8,8 @@ type TailNumber = Text
 
 data ParsedAction =
   Check TailNumber Day |
-  Reserve TailNumber UTCTime UTCTime
+  Review Day |
+  Reserve TailNumber UTCTime UTCTime |
+  Cancel (Maybe TailNumber) UTCTime | 
+  Update UTCTime -- extend the current reservation to the given new end time
   deriving (Show, Eq)

@@ -31,6 +31,26 @@ reserve = do
   return $ \zonedSeriesTime ->
     Reserve aid (stime zonedSeriesTime) (etime zonedSeriesTime)
 
+cancel :: Parser (ZoneSeriesTime -> ParsedAction)
+cancel = do
+  asciiCI "cancel"
+  option (\zonedSeriesTime -> Cancel Nothing $ zoneSeriesTimeToUTC zonedSeriesTime) $ do
+    skipSpace
+    aid <- tailNumber
+    skipSpace
+    stime <- timeFromNow
+    return $ \zonedSeriesTime ->
+      Cancel (Just aid) (stime zonedSeriesTime)
+
+review :: Parser (ZoneSeriesTime -> ParsedAction)
+review = do
+  asciiCI "review"
+  skipSpace
+  sday <- option id dayFromToday
+  return $ \zonedSeriesTime -> let startDay = (localDay.zoneSeriesTimeToLocalTime) zonedSeriesTime in
+    Review (sday startDay)
+
+
 check :: Parser (ZoneSeriesTime -> ParsedAction)
 check = do
   asciiCI "check"
@@ -41,7 +61,14 @@ check = do
   return $ \zonedSeriesTime -> let startDay = (localDay.zoneSeriesTimeToLocalTime) zonedSeriesTime in
     Check aid (sday startDay)
 
+update :: Parser (ZoneSeriesTime -> ParsedAction)
+update = do
+  (asciiCI "extend" <|> asciiCI "update")
+  skipSpace
+  etime <- timeFromNow
+  return $ \zonedSeriesTime -> Update (etime zonedSeriesTime)
+
 
 
 actionFromText :: Parser (ZoneSeriesTime -> ParsedAction)
-actionFromText = reserve <|> check
+actionFromText = reserve <|> cancel <|> review <|> check <|> update
