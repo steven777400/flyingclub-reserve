@@ -40,7 +40,7 @@ time =
 
 localTimeFromNow :: Parser (ZoneSeriesTime -> UTCTime)
 localTimeFromNow = do
-    d <- dayFromToday
+    d <- option id dayFromToday
     skipSpace
     t <- time
     return $ \zonedSeriesTime -> let
@@ -57,7 +57,7 @@ utcTimeFromNow = do
     day <- digits 2 31
     hour <- digits 2 23
     minute <- digits 2 59
-    _ <- asciiCI "z"
+    asciiCI "z"
     return $ \(toGregorian.utctDay.zoneSeriesTimeToUTC -> (startYear, startMonth, startDay)) ->
         case
             if day >= startDay
@@ -70,4 +70,4 @@ utcTimeFromNow = do
         Nothing -> throw $ FormatException "Invalid date"
 
 timeFromNow :: Parser (ZoneSeriesTime -> UTCTime)
-timeFromNow = localTimeFromNow <|> utcTimeFromNow
+timeFromNow = utcTimeFromNow <|> localTimeFromNow

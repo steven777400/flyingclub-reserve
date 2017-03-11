@@ -26,9 +26,6 @@ getzst = do
     tzs <- getTimeZoneSeriesFromOlsonFile "/usr/share/zoneinfo/America/Los_Angeles"
     return $ ZoneSeriesTime utcOrigin tzs
 
-
-
-
 testTime zst str timestr = do
     let day = parseOnly (timeFromNow <* endOfInput) str
     case day of
@@ -66,6 +63,10 @@ spec = do
             testTime zst "tomorrow 1559" "2016-02-27 23:59:00 UTC"
             testTime zst "tomorrow 1600" "2016-02-28 00:00:00 UTC"
             testTime zst "tomorrow 1700" "2016-02-28 01:00:00 UTC"
+        it "handles implicit today" $ do
+            zst <- getzst
+            testTime zst "5pm" "2016-02-27 01:00:00 UTC"
+            testTime zst "11:30pm" "2016-02-27 07:30:00 UTC"
     describe "time with absolute date" $ do
         it "handles summer time" $ do
             zst <- getzst
@@ -92,20 +93,20 @@ Sunday, November 6
             testTime zst "03/13 1am" "2016-03-13 09:00:00 UTC"
             testTime zst "03/13 1:59am" "2016-03-13 09:59:00 UTC"
             -- spring forward, there is no 2am
-            testTime zst "03/13 2am" "" `shouldThrow` anyException
+            testTime zst "3/13 2am" "" `shouldThrow` anyException
             testTime zst "03/13 2:59am" "" `shouldThrow` anyException
-            testTime zst "03/13 3am" "2016-03-13 10:00:00 UTC"
+            testTime zst "3/13 3am" "2016-03-13 10:00:00 UTC"
             testTime zst "03/13 3:59am" "2016-03-13 10:59:00 UTC"
-            testTime zst "03/14 1am" "2016-03-14 08:00:00 UTC"
+            testTime zst "3/14 1am" "2016-03-14 08:00:00 UTC"
         it "handles pdt to pst" $ do
             zst <- getzst
             testTime zst "11/05 1am" "2016-11-05 08:00:00 UTC"
-            testTime zst "11/06 12am" "2016-11-06 07:00:00 UTC"
+            testTime zst "11/6 12am" "2016-11-06 07:00:00 UTC"
             testTime zst "11/06 12:59am" "2016-11-06 07:59:00 UTC"
             -- fall back, 2am -> 1am
-            testTime zst "11/06 1am" "2016-11-06 09:00:00 UTC"
+            testTime zst "11/6 1am" "2016-11-06 09:00:00 UTC"
             testTime zst "11/06 1:59am" "2016-11-06 09:59:00 UTC"
-            testTime zst "11/06 2am" "2016-11-06 10:00:00 UTC"
+            testTime zst "11/6 2am" "2016-11-06 10:00:00 UTC"
             testTime zst "11/06 2:59am" "2016-11-06 10:59:00 UTC"
         it "handles utc entry" $ do
             zst <- getzst
