@@ -145,18 +145,27 @@ spec = do
         it "gets only nondeleted reservations after now" $ runInDb $ \sd -> do
           orig <- runAuthorizedAction (pilotUser sd) (
             getReservationsUser (pilotUser sd))
+            -- one in the past
           rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
           insertKey rk $ S.Reservation
             (pilotUser sd) (n073 sd)
             (UTCTime (fromGregorian 2016 01 20) (8*60*60))
             (UTCTime (fromGregorian 2016 01 20) (10*60*60))
             Nothing False ""
+            -- a deleted one in the future
           rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
           insertKey rk $ S.Reservation
             (pilotUser sd) (n073 sd)
             (UTCTime (fromGregorian 2018 01 20) (8*60*60))
             (UTCTime (fromGregorian 2018 01 20) (10*60*60))
             (Just $ UTCTime (fromGregorian 2018 01 20) 0) False ""
+            -- one for someone else
+          rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
+          insertKey rk $ S.Reservation
+            (officerUser sd) (n073 sd)
+            (UTCTime (fromGregorian 2019 01 20) (8*60*60))
+            (UTCTime (fromGregorian 2019 01 20) (10*60*60))
+            Nothing False ""
           r <- runAuthorizedAction (pilotUser sd) (
             getReservationsUser (pilotUser sd))
           liftIO $ length r `shouldBe` length orig

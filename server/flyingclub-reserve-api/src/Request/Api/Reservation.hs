@@ -11,6 +11,7 @@ import           Control.Monad.IO.Class            (liftIO)
 import           Data.List                         (partition)
 import           Data.Time.Clock
 import           Database.Persist.Audit.Operations
+import           Database.Persist.Owner.Operations
 import           Database.Persist.Notification
 import qualified Database.Persist.Schema           as S
 import           Database.Persist.Sql              ((<.), (=.), (==.), (>.))
@@ -51,7 +52,7 @@ getReservationsUser :: DB.Key S.User -> AuthorizedAction [DB.Entity S.Reservatio
 getReservationsUser userId =
   authorize Social $ const $ do
     now <- liftIO getCurrentTime
-    DB.selectList [notDeleted, S.ReservationEnd >. now] []
+    DB.selectList [notDeleted, ownedBy userId, S.ReservationEnd >. now] []
 
 completeResTransaction :: DB.Key S.User -> DB.Entity S.Reservation -> S.SqlM ()
 completeResTransaction userId (DB.Entity resId res@S.Reservation{..}) =
