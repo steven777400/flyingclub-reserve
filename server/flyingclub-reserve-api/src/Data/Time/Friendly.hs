@@ -1,13 +1,16 @@
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE RecordWildCards #-}
-module Data.Time.Friendly (formatDay, formatTime) where
+module Data.Time.Friendly (formatDay, formatTime, formatZSTUTC) where
 
 import           Data.String.Interpolate
 import           Data.Time.Calendar
 import           Data.Time.Calendar.WeekDate
-import           Data.Time.Format            (TimeLocale, defaultTimeLocale,
-                                              months, wDays)
+import           Data.Time.Clock
+import           Data.Time.Format                    (TimeLocale,
+                                                      defaultTimeLocale, months,
+                                                      wDays)
 import           Data.Time.LocalTime
+import           Data.Time.LocalTime.TimeZone.Series
 
 {--
 i considered using Data.Time.Format but it didn't have the support
@@ -71,3 +74,10 @@ formatTime tod@TimeOfDay{..} = [i|#{hour}:#{minutePad}#{todMin} #{ampm}|]
       x -> x
     minutePad = if todMin < 10 then "0" else ""
     ampm = if todHour < 12 then "AM" else "PM"
+
+formatZSTUTC :: ZoneSeriesTime -> UTCTime -> String
+formatZSTUTC zonedSeriesTime utcToFormat = [i|#{formatDay startDay localDayToFormat} #{formatTime localTimeOfDayToFormat}|]
+  where
+    startDay = (localDay.zoneSeriesTimeToLocalTime) zonedSeriesTime
+    -- can't use {..} below because localDay conflicts with call above
+    (LocalTime localDayToFormat localTimeOfDayToFormat) = utcToLocalTime' (zoneSeriesTimeSeries zonedSeriesTime) utcToFormat

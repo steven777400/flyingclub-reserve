@@ -1,25 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Request.Parser.TimeSpec where
 
-import Control.Applicative
-import Data.Attoparsec.Text
+import           Control.Applicative
+import           Data.Attoparsec.Text
 
-import Data.Time.Calendar
-import Data.Time.Calendar.WeekDate
-import Data.Time.Clock
-import Data.Time.LocalTime.TimeZone.Series
-import Data.Time.LocalTime.TimeZone.Olson
+import           Data.Time.Calendar
+import           Data.Time.Calendar.WeekDate
+import           Data.Time.Clock
+import           Data.Time.LocalTime.TimeZone.Olson
+import           Data.Time.LocalTime.TimeZone.Series
 
 
-import Test.Hspec
-import Request.Parser.Time
+import           Request.Parser.Time
+import           Test.Hspec
 
 -- 57445 = a saturday, 2/27/16, by utc
 -- in this timezone, we expect that 0227 0000 utc -> 2/27 4pm
 -- because (4+12) + 8 = 24 -> 00
 originDay = ModifiedJulianDay 57445
 utcOrigin = UTCTime originDay 0
--- so utcOrigin is 2/27/16 4pm
+-- so utcOrigin is local 2/26/16 4pm
 
 
 getzst = do
@@ -30,7 +30,7 @@ testTime zst str timestr = do
     let day = parseOnly (timeFromNow <* endOfInput) str
     case day of
         Left err -> error err
-        Right f -> show $ f zst
+        Right f  -> show $ f zst
     `shouldBe` timestr
 
 spec :: Spec
