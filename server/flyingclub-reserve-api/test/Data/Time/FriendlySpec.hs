@@ -66,4 +66,15 @@ spec = do
           formatZSTUTC zst utcOrigin' `shouldBe` "tomorrow 4:00 AM"
         it "handles other day" $ do
           zst' <- getzst'
-          formatZSTUTC zst' utcOrigin `shouldBe` "Friday, February 26th 4:00 PM"          
+          formatZSTUTC zst' utcOrigin `shouldBe` "Friday, February 26th 4:00 PM"
+    describe "formatZSTUTCPair" $ do
+        -- so getzst is 2/26/16 4pm
+        -- so getzst' is local 2/27/16 4am
+        it "handles different local days" $ do
+          zst <- getzst
+          formatZSTUTCPair zst utcOrigin utcOrigin' `shouldBe` "today 4:00 PM until tomorrow 4:00 AM"
+          formatZSTUTCPair zst utcOrigin' (UTCTime (addDays 3 originDay) 0) `shouldBe` "tomorrow 4:00 AM until Monday, February 29th 4:00 PM"
+        it "handles same local days" $ do
+          zst <- getzst
+          formatZSTUTCPair zst utcOrigin (UTCTime originDay (60*60)) `shouldBe` "today 4:00 PM until 5:00 PM"
+          formatZSTUTCPair zst utcOrigin' (UTCTime originDay (13*60*60)) `shouldBe` "tomorrow 4:00 AM until 5:00 AM"

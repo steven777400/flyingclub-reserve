@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE RecordWildCards #-}
-module Data.Time.Friendly (formatDay, formatTime, formatZSTUTC) where
+module Data.Time.Friendly (formatDay, formatTime, formatZSTUTC, formatZSTUTCPair) where
 
 import           Data.String.Interpolate
 import           Data.Time.Calendar
@@ -75,9 +75,24 @@ formatTime tod@TimeOfDay{..} = [i|#{hour}:#{minutePad}#{todMin} #{ampm}|]
     minutePad = if todMin < 10 then "0" else ""
     ampm = if todHour < 12 then "AM" else "PM"
 
-formatZSTUTC :: ZoneSeriesTime -> UTCTime -> String
-formatZSTUTC zonedSeriesTime utcToFormat = [i|#{formatDay startDay localDayToFormat} #{formatTime localTimeOfDayToFormat}|]
+formatZSTUTC' :: Bool -> ZoneSeriesTime -> UTCTime -> String
+formatZSTUTC' showDay zonedSeriesTime utcToFormat =
+  if showDay
+    then [i|#{formatDay startDay localDayToFormat} #{formatTime localTimeOfDayToFormat}|]
+    else formatTime localTimeOfDayToFormat
   where
     startDay = (localDay.zoneSeriesTimeToLocalTime) zonedSeriesTime
     -- can't use {..} below because localDay conflicts with call above
     (LocalTime localDayToFormat localTimeOfDayToFormat) = utcToLocalTime' (zoneSeriesTimeSeries zonedSeriesTime) utcToFormat
+
+
+formatZSTUTC :: ZoneSeriesTime -> UTCTime -> String
+formatZSTUTC = formatZSTUTC' True
+
+formatZSTUTCPair :: ZoneSeriesTime -> UTCTime -> UTCTime -> String
+formatZSTUTCPair zonedSeriesTime beginUtcToFormat endUtcToFormat =
+  [i|#{formatZSTUTC zonedSeriesTime beginUtcToFormat} until #{formatZSTUTC' showSecondDay zonedSeriesTime endUtcToFormat}|]
+  where
+    (LocalTime beginLocalDayToFormat _) = utcToLocalTime' (zoneSeriesTimeSeries zonedSeriesTime) beginUtcToFormat
+    (LocalTime endLocalDayToFormat _) = utcToLocalTime' (zoneSeriesTimeSeries zonedSeriesTime) endUtcToFormat
+    showSecondDay = beginLocalDayToFormat /= endLocalDayToFormat
