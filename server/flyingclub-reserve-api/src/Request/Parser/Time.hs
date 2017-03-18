@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns      #-}
-module Request.Parser.Time (timeFromNow) where
+module Request.Parser.Time (timeFromNow, timeFromNowWithDefaultDay) where
 
 import           Control.Applicative
 import           Control.Exception.Format
@@ -38,27 +38,31 @@ time =
     tod (digits 2 23) ""
 
 
-localTimeFromNow :: Parser (ZoneSeriesTime -> UTCTime)
+localTimeFromNow :: Parser (ZoneSeriesTime -> Maybe Day -> UTCTime)
 localTimeFromNow = do
-    d <- option id dayFromToday
+    d <- option Nothing (Just <$> dayFromToday)
     skipSpace
     t <- time
-    return $ \zonedSeriesTime -> let
+    return $ \zonedSeriesTime defaultDay -> let
         startDay = (localDay.zoneSeriesTimeToLocalTime) zonedSeriesTime
         tz = zoneSeriesTimeSeries zonedSeriesTime
-        local = LocalTime (d startDay) t
+        d' = case (d, defaultDay) of
+          (Nothing, Nothing)         -> id  -- if no day given to parse, and no default, it's the current day
+          (Nothing, Just defaultDay) -> const defaultDay -- ignore the current day and use the default
+          (Just givenDay, _)         -> givenDay
+        local = LocalTime (d' startDay) t
         in
         if isValidLocalTime tz local
         then localTimeToUTC' tz local
         else throw $ FormatException "Invalid local time"
 
-utcTimeFromNow :: Parser (ZoneSeriesTime -> UTCTime)
+utcTimeFromNow :: Parser (ZoneSeriesTime -> Maybe Day -> UTCTime)
 utcTimeFromNow = do
     day <- digits 2 31
     hour <- digits 2 23
     minute <- digits 2 59
     asciiCI "z"
-    return $ \(toGregorian.utctDay.zoneSeriesTimeToUTC -> (startYear, startMonth, startDay)) ->
+    return $ \(toGregorian.utctDay.zoneSeriesTimeToUTC -> (startYear, startMonth, startDay)) _ ->
         case
             if day >= startDay
             then fromGregorianValid startYear startMonth day
@@ -69,5 +73,9 @@ utcTimeFromNow = do
         Just actualDay -> UTCTime actualDay (secondsToDiffTime.toInteger $ hour*60*60 + minute*60)
         Nothing -> throw $ FormatException "Invalid date"
 
+-- default day is used if there is no day provided in the parse but we want to use a different day than the zst day
+timeFromNowWithDefaultDay :: Parser (ZoneSeriesTime -> Maybe Day -> UTCTime)
+timeFromNowWithDefaultDay = utcTimeFromNow <|> localTimeFromNow
+
 timeFromNow :: Parser (ZoneSeriesTime -> UTCTime)
-timeFromNow = utcTimeFromNow <|> localTimeFromNow
+timeFromNow = flip <$> timeFromNowWithDefaultDay <*> return Nothing

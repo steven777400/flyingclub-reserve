@@ -49,6 +49,9 @@ spec = do
         testTime zst "Reserve 078 0227 1100 1600" $ Reserve "078" (addUTCTime (7*60*60) utcOrigin) (addUTCTime (12*60*60) utcOrigin)
         testTime zst "RESERVE 079 Tuesday 7am Thursday 5pm" $ Reserve "079" (addUTCTime ((3+72)*60*60) utcOrigin) (addUTCTime ((13+120)*60*60) utcOrigin)
         testTime zst "RESERVE 079 Tuesday 7am 5pm" $ Reserve "079" (addUTCTime ((3+72)*60*60) utcOrigin) (addUTCTime ((13+72)*60*60) utcOrigin)
+        testTime zst "Reserve 080 271300Z 271600Z" $ Reserve "080" (addUTCTime (1*60*60) utcOrigin) (addUTCTime (4*60*60) utcOrigin)
+        testTime zst "Reserve 081 281300Z 281600Z" $ Reserve "081" (addUTCTime (25*60*60) utcOrigin) (addUTCTime (28*60*60) utcOrigin)
+        testTime zst "Reserve 081 281300Z 011200Z" $ Reserve "081" (addUTCTime (25*60*60) utcOrigin) (addUTCTime (72*60*60) utcOrigin)
       it "reserve for time range with extra word" $ do
         zst <- getzst
         testTime zst "reserve 073 11am to 4pm" $ Reserve "073" (addUTCTime (7*60*60) utcOrigin) (addUTCTime (12*60*60) utcOrigin)

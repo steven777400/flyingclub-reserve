@@ -27,9 +27,12 @@ reserve = do
   stime <- timeFromNow
   skipSpace
   option "" (untilp <* skipSpace)
-  etime <- timeFromNow
-  return $ \zonedSeriesTime ->
-    Reserve aid (stime zonedSeriesTime) (etime zonedSeriesTime)
+  etime <- timeFromNowWithDefaultDay
+  return $ \zonedSeriesTime -> let
+    start = stime zonedSeriesTime
+    startLocalDay = Just $ localDay $ utcToLocalTime' (zoneSeriesTimeSeries zonedSeriesTime) start
+    in
+    Reserve aid start (etime zonedSeriesTime startLocalDay)
 
 cancel :: Parser (ZoneSeriesTime -> ParsedAction)
 cancel = do
