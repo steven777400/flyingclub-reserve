@@ -37,6 +37,7 @@ anyConflictException = const True
 data SampleData = SampleData {
   officerUser :: Key S.User,
   pilotUser   :: Key S.User,
+  socialUser   :: Key S.User,
   naUser      :: Key S.User,
   n073        :: Key S.Airplane,
   n349        :: Key S.Airplane,
@@ -52,12 +53,14 @@ runInDb sql = runSqlite ":memory:" $ do
     i1 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
     i2 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
     i3 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
+    i4 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
     ia1 <- liftIO $ S.AirplaneKey <$> (randomIO :: IO UUID)
     ia2 <- liftIO $ S.AirplaneKey <$> (randomIO :: IO UUID)
     ia3 <- liftIO $ S.AirplaneKey <$> (randomIO :: IO UUID)
     insertKey i1 sampleOfficerUser
     insertKey i2 samplePilotUser
     insertKey i3 sampleNAUser
+    insertKey i4 sampleSocialUser
     insertKey ia1 a1
     insertKey ia2 a2
     insertKey ia3 a3
@@ -94,7 +97,7 @@ runInDb sql = runSqlite ":memory:" $ do
       (UTCTime (fromGregorian 2016 02 27) (9*60*60))
       (UTCTime (fromGregorian 2016 02 27) (11*60*60))
       Nothing False ""
-    sql (SampleData i1 i2 i3 ia1 ia2 ia3 rk1 ork)
+    sql (SampleData i1 i2 i4 i3 ia1 ia2 ia3 rk1 ork)
 
 sampleOfficerUser = S.User "test1f" "test1l" Officer Nothing
 samplePilotUser = S.User "test1f" "test1l" Pilot Nothing
@@ -117,6 +120,10 @@ utcOriginP = UTCTime originDayP 0
 
 originDay' = ModifiedJulianDay 57445
 utcOrigin' = UTCTime originDay' 0
+
+originDayF = ModifiedJulianDay 59445
+utcOriginF = UTCTime originDayF 0
+
 
 getzst origin = do
     tzs <- getTimeZoneSeriesFromOlsonFile "/usr/share/zoneinfo/America/Los_Angeles"
@@ -177,4 +184,23 @@ spec = do
             liftIO $ isLeft ex `shouldBe` True
 
             ex <- (try (runParsedAction zst (pilotUser sd) $ Review originDayP)) :: S.SqlM (Either FormatException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+  describe "reserve" $ do
+        it "reserves" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOriginP
+            ReserveResult r <- runParsedAction zst (officerUser sd) $ Reserve "073" utcOriginF (addUTCTime 3600 utcOriginF)
+            return ()
+
+        it "throws on invalid entries" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOriginP
+            ex <- (try (runParsedAction zst (naUser sd) $ Reserve "073" utcOrigin (addUTCTime 3600 utcOrigin))) :: S.SqlM (Either UnauthorizedException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+
+            ex <- (try (runParsedAction zst (socialUser sd) $ Reserve "073" utcOrigin (addUTCTime 3600 utcOrigin))) :: S.SqlM (Either UnauthorizedException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+
+            ex <- (try (runParsedAction zst (pilotUser sd) $ Reserve "073" utcOriginP (addUTCTime 3600 utcOrigin))) :: S.SqlM (Either ConflictException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+
+            ex <- (try (runParsedAction zst (pilotUser sd) $ Reserve "074" utcOrigin (addUTCTime 3600 utcOrigin))) :: S.SqlM (Either FormatException ParsedActionResult)
             liftIO $ isLeft ex `shouldBe` True

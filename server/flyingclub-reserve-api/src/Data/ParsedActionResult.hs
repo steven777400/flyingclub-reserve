@@ -5,7 +5,8 @@ import           Database.Persist.Sql
 
 data ParsedActionResult =
   CheckResult [Entity Reservation] |
-  ReviewResult [Entity Reservation]
+  ReviewResult [Entity Reservation] |
+  ReserveResult (Entity Reservation)
 
   --Reserve TailNumber UTCTime UTCTime |
   --Cancel (Maybe TailNumber) UTCTime |

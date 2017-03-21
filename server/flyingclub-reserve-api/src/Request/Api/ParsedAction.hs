@@ -7,6 +7,7 @@ import           Data.ParsedAction
 import           Data.ParsedActionResult
 import           Data.Text
 import           Data.Time.Calendar
+import           Data.Time.Clock
 import           Data.Time.DayRange
 import           Data.Time.LocalTime.TimeZone.Series
 import           Database.Persist.Audit.Operations
@@ -51,7 +52,21 @@ review zst userId day = do
   return $ ReviewResult res'
 
 
+reserve :: ZoneSeriesTime -> Key User -> TailNumber -> UTCTime -> UTCTime -> SqlM ParsedActionResult
+reserve zst userId tailn begin end = do
+  planes <- runAuthorizedAction userId (findAirplanes tailn)
+  case planes of
+    [p] -> do
+      let res = Reservation userId (entityKey p) begin end Nothing False empty
+      resid <- runAuthorizedAction userId (createReservation res)
+
+      return $ ReserveResult (Entity resid res)
+    [] -> throw (FormatException "Tail number not found")
+    _ -> throw (FormatException "Ambigious tail number, provide additional digits")
+
+
 runParsedAction :: ZoneSeriesTime -> Key User -> ParsedAction -> SqlM ParsedActionResult
 runParsedAction zst userId pa = case pa of
-  Check tailn day -> check zst userId tailn day
-  Review day -> review zst userId day
+  Check tailn day         -> check zst userId tailn day
+  Review day              -> review zst userId day
+  Reserve tailn begin end -> reserve zst userId tailn begin end
