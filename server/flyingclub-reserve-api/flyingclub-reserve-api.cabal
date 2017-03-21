@@ -16,8 +16,9 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:
-    Data.Time.DayRange, Data.Time.Friendly, Data.ParsedAction
+    Data.Time.DayRange, Data.Time.Friendly, Data.ParsedAction, Data.ParsedActionResult,
     Request.Api.AuthorizedAction, Request.Api.Hours, Request.Api.User, Request.Api.Reservation, Request.Api.Airplane,
+    Request.Api.ParsedAction,
     Request.Parser.Day, Request.Parser.Time, Request.Parser.Reservation
   other-modules:       Data.Time.Horizon, Request.Parser.Utility
   build-depends:       base >= 4.7 && < 5, exception-stacktrace, flyingclub-reserve-db,

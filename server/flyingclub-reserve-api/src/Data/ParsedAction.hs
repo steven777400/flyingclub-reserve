@@ -10,6 +10,6 @@ data ParsedAction =
   Check TailNumber Day |
   Review Day |
   Reserve TailNumber UTCTime UTCTime |
-  Cancel (Maybe TailNumber) UTCTime | 
+  Cancel (Maybe TailNumber) UTCTime |
   Update UTCTime -- extend the current reservation to the given new end time
-  deriving (Show, Eq)
+  deriving (Eq)

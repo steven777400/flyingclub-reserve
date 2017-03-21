@@ -12,6 +12,8 @@ import           Data.ParsedAction
 import           Request.Parser.Reservation
 import           Test.Hspec
 
+instance Show ParsedAction where
+  
 -- 57445 = a saturday, 2/27/16, by utc
 originDay = ModifiedJulianDay 57445
 utcOrigin = UTCTime originDay (12*60*60)
