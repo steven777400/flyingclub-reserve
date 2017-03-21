@@ -134,7 +134,7 @@ spec = do
             CheckResult r <- runParsedAction zstP (pilotUser sd) $ Check "073" originDayP
             liftIO $ length r `shouldBe` 0
 
-            CheckResult r <- runParsedAction zstP (pilotUser sd) $ Check "073" originDay
+            CheckResult r <- runParsedAction zstP (officerUser sd) $ Check "073" originDay
             liftIO $ length r `shouldBe` 3
 
             zst' <- liftIO $ getzst utcOrigin'
@@ -155,4 +155,26 @@ spec = do
             liftIO $ isLeft ex `shouldBe` True
 
             ex <- (try (runParsedAction zst (pilotUser sd) $ Check "" originDay)) :: S.SqlM (Either FormatException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+  describe "review" $ do
+        it "finds matching reservations" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOrigin
+            ReviewResult r <- runParsedAction zst (officerUser sd) $ Review originDay
+            liftIO $ length r `shouldBe` 1
+
+            zstP <- liftIO $ getzst utcOriginP
+            ReviewResult r <- runParsedAction zstP (pilotUser sd) $ Review originDayP
+            liftIO $ length r `shouldBe` 0
+
+            ReviewResult r <- runParsedAction zstP (pilotUser sd) $ Review originDay
+            liftIO $ length r `shouldBe` 2
+
+            ReviewResult r <- runParsedAction zstP (officerUser sd) $ Review originDay'
+            liftIO $ length r `shouldBe` 2
+        it "throws on invalid entries" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOrigin
+            ex <- (try (runParsedAction zst (naUser sd) $ Review originDay)) :: S.SqlM (Either UnauthorizedException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+
+            ex <- (try (runParsedAction zst (pilotUser sd) $ Review originDayP)) :: S.SqlM (Either FormatException ParsedActionResult)
             liftIO $ isLeft ex `shouldBe` True

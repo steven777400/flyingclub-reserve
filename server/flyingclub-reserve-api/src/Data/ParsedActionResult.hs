@@ -4,9 +4,9 @@ import           Database.Persist.Schema
 import           Database.Persist.Sql
 
 data ParsedActionResult =
-  CheckResult [Entity Reservation]
-  --Review Day |
+  CheckResult [Entity Reservation] |
+  ReviewResult [Entity Reservation]
+
   --Reserve TailNumber UTCTime UTCTime |
   --Cancel (Maybe TailNumber) UTCTime |
   --Update UTCTime -- extend the current reservation to the given new end time
-  
