@@ -2,6 +2,7 @@
 module Data.Time.DayRange where
 
 import           Data.Aeson
+import qualified Data.Text                           as T
 import           Data.Time.Calendar
 import           Data.Time.Calendar.WeekDate
 import           Data.Time.Clock
@@ -13,7 +14,7 @@ import qualified GHC.Generics                        as G
 data TimeOfDaySlot = TimeOfDaySlot
   { slotUtc     :: UTCTime
   , slotLocal   :: LocalTime
-  , slotDisplay :: String
+  , slotDisplay :: T.Text
   } deriving (G.Generic)
 
 instance ToJSON TimeOfDaySlot

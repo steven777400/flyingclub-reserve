@@ -1,8 +1,10 @@
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Data.Time.Friendly (formatDay, formatTime, formatZSTUTC, formatZSTUTCPair) where
 
-import           Data.String.Interpolate
+import           Data.String.Interpolate.IsString
+import qualified Data.Text                           as T
 import           Data.Time.Calendar
 import           Data.Time.Calendar.WeekDate
 import           Data.Time.Clock
@@ -39,14 +41,14 @@ lookupFst f wd = case wd of
 year :: Day -> Integer
 year = fst3.toGregorian
 
-formatWeekDay :: Day -> String
-formatWeekDay = (lookupFst wDays).trd3.toWeekDate
+formatWeekDay :: Day -> T.Text
+formatWeekDay = (T.pack).(lookupFst wDays).trd3.toWeekDate
 
 -- for month, the gregorian months are 1..12 but the array is Jan.. where 0 = Jan
-formatMonth :: Day -> String
-formatMonth = (lookupFst months).(\x -> x-1).snd3.toGregorian
+formatMonth :: Day -> T.Text
+formatMonth = (T.pack).(lookupFst months).(\x -> x-1).snd3.toGregorian
 
-ordinal :: Int -> String
+ordinal :: Int -> T.Text
 ordinal n | n > 10 && n < 20 = "th"
           | otherwise =
             case n `mod` 10 of
@@ -55,18 +57,18 @@ ordinal n | n > 10 && n < 20 = "th"
               3 -> "rd"
               _ -> "th"
 
-formatDayN :: Day -> String
+formatDayN :: Day -> T.Text
 formatDayN d = [i|#{dayn}#{ordinal dayn}|]
   where dayn = (trd3.toGregorian) d
 
 
-formatDay :: Day -> Day -> String
+formatDay :: Day -> Day -> T.Text
 formatDay today day   | today == day              = "today"
                       | addDays 1 today == day    = "tomorrow"
                       | year today == year day    = [i|#{formatWeekDay day}, #{formatMonth day} #{formatDayN day}|]
                       | otherwise                 = [i|#{formatWeekDay day}, #{formatMonth day} #{formatDayN day}, #{year day}|]
 
-formatTime :: TimeOfDay -> String
+formatTime :: TimeOfDay -> T.Text
 formatTime tod@TimeOfDay{..} = [i|#{hour}:#{minutePad}#{todMin} #{ampm}|]
   where
     hour = case todHour `mod` 12 of
@@ -75,7 +77,7 @@ formatTime tod@TimeOfDay{..} = [i|#{hour}:#{minutePad}#{todMin} #{ampm}|]
     minutePad = if todMin < 10 then "0" else ""
     ampm = if todHour < 12 then "AM" else "PM"
 
-formatZSTUTC' :: Bool -> ZoneSeriesTime -> UTCTime -> String
+formatZSTUTC' :: Bool -> ZoneSeriesTime -> UTCTime -> T.Text
 formatZSTUTC' showDay zonedSeriesTime utcToFormat =
   if showDay
     then [i|#{formatDay startDay localDayToFormat} #{formatTime localTimeOfDayToFormat}|]
@@ -86,10 +88,10 @@ formatZSTUTC' showDay zonedSeriesTime utcToFormat =
     (LocalTime localDayToFormat localTimeOfDayToFormat) = utcToLocalTime' (zoneSeriesTimeSeries zonedSeriesTime) utcToFormat
 
 
-formatZSTUTC :: ZoneSeriesTime -> UTCTime -> String
+formatZSTUTC :: ZoneSeriesTime -> UTCTime -> T.Text
 formatZSTUTC = formatZSTUTC' True
 
-formatZSTUTCPair :: ZoneSeriesTime -> UTCTime -> UTCTime -> String
+formatZSTUTCPair :: ZoneSeriesTime -> UTCTime -> UTCTime -> T.Text
 formatZSTUTCPair zonedSeriesTime beginUtcToFormat endUtcToFormat =
   [i|#{formatZSTUTC zonedSeriesTime beginUtcToFormat} until #{formatZSTUTC' showSecondDay zonedSeriesTime endUtcToFormat}|]
   where

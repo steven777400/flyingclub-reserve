@@ -38,21 +38,24 @@ makeReservationFilter :: UTCTime -> UTCTime -> [DB.Filter S.Reservation]
 makeReservationFilter start end =
   [S.ReservationStart <. end, S.ReservationEnd >. start]
 
+reservationSort :: DB.SelectOpt (S.Reservation)
+reservationSort = DB.Asc (S.ReservationStart)
+
 getReservations :: UTCTime -> UTCTime -> AuthorizedAction [DB.Entity S.Reservation]
 getReservations start end =
   authorize Social $ const $ DB.selectList
-    (notDeleted:(makeReservationFilter start end)) []
+    (notDeleted:(makeReservationFilter start end)) [reservationSort]
 
 getReservationsDeleted :: UTCTime -> UTCTime -> AuthorizedAction [DB.Entity S.Reservation]
 getReservationsDeleted start end =
   authorize Officer $ const $ DB.selectList
-    (makeReservationFilter start end) []
+    (makeReservationFilter start end) [reservationSort]
 
 getReservationsUser :: DB.Key S.User -> AuthorizedAction [DB.Entity S.Reservation]
 getReservationsUser userId =
   authorize Social $ const $ do
     now <- liftIO getCurrentTime
-    DB.selectList [notDeleted, ownedBy userId, S.ReservationEnd >. now] []
+    DB.selectList [notDeleted, ownedBy userId, S.ReservationEnd >. now] [reservationSort]
 
 completeResTransaction :: DB.Key S.User -> DB.Entity S.Reservation -> S.SqlM ()
 completeResTransaction userId (DB.Entity resId res@S.Reservation{..}) =
