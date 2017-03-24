@@ -180,3 +180,11 @@ spec = do
             r <- runParsedAction zst (pilotUser sd) $ Review originDayF
             liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
               `shouldBe` "You have no reservations for the time period"
+
+        it "reserves" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOriginP
+            airplanes <- runAuthorizedAction (pilotUser sd) getAirplanes
+            users <- runAuthorizedAction (pilotUser sd) getUsers
+            r <- runParsedAction zst (pilotUser sd) $ Reserve "349" utcOriginF (addUTCTime 3600 utcOriginF)
+            liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
+              `shouldBe` "You're reserved in 52349 cessna 182 Wednesday, January 18th, 2021 at 5:00 PM until 6:00 PM"

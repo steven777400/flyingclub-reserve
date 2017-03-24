@@ -50,3 +50,8 @@ parsedActionResultResponse par = case par of
         return $ plane <> " " <> formatZSTUTCPair zst (reservationStart res) (reservationEnd res)
       ) reses
     return $ "You're reserved in " <> (T.intercalate ", and in " entries)
+
+  ReserveResult (Entity _ res) -> do
+    plane <- airplane $ reservationAirplaneId res
+    zst <- asks zst
+    return $ "You're reserved in " <> plane <> " " <> formatZSTUTCPair zst (reservationStart res) (reservationEnd res)
