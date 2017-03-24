@@ -26,11 +26,11 @@ userName userId = asks $ (\u->userFirstname u <> " " <> userLastname u).entityVa
 
 parsedActionResultResponse :: ParsedActionResult -> Reader Context T.Text
 parsedActionResultResponse par = case par of
-  CheckResult [] -> return "The airplane is available for the entire day"
+  CheckResult [] -> return "This airplane is available for the entire day"
   CheckResult reses -> do
     entries <- mapM (\(Entity _ res) -> do
         name <- userName $ reservationUserId res
         zst <- asks zst
-        return $ name <> " on " <> formatZSTUTCPair zst (reservationStart res) (reservationEnd res)
+        return $ name <> " " <> formatZSTUTCPair zst (reservationStart res) (reservationEnd res)
       ) reses
-    return $ "The airplane is already scheduled by " <> (T.intercalate ", and by " entries)
+    return $ "The airplane is scheduled by " <> (T.intercalate ", and by " entries)

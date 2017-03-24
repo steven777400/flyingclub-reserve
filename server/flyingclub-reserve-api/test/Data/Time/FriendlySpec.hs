@@ -44,8 +44,8 @@ spec = do
         it "identify future month" $ formatDay originDay (addDays 300 originDay) `shouldBe` "Friday, December 23rd"
         it "identify future year" $ formatDay originDay (addDays 320 originDay) `shouldBe` "Thursday, January 12th, 2017"
     describe "formatTime" $ do
-        it "handles midnight" $ formatTime midnight `shouldBe` "12:00 AM"
-        it "handles noon" $ formatTime midday `shouldBe` "12:00 PM"
+        it "handles midnight" $ formatTime midnight `shouldBe` "midnight"
+        it "handles noon" $ formatTime midday `shouldBe` "noon"
         it "handles 0005" $ formatTime (TimeOfDay 0 5 0) `shouldBe` "12:05 AM"
         it "handles 0015" $ formatTime (TimeOfDay 0 15 0) `shouldBe` "12:15 AM"
         it "handles 0900" $ formatTime (TimeOfDay 9 0 0) `shouldBe` "9:00 AM"
@@ -58,23 +58,23 @@ spec = do
         -- so getzst' is local 2/27/16 4am
         it "handles same day" $ do
           zst <- getzst
-          formatZSTUTC zst utcOrigin `shouldBe` "today 4:00 PM"
+          formatZSTUTC zst utcOrigin `shouldBe` "today at 4:00 PM"
           zst' <- getzst'
-          formatZSTUTC zst' utcOrigin' `shouldBe` "today 4:00 AM"
+          formatZSTUTC zst' utcOrigin' `shouldBe` "today at 4:00 AM"
         it "handles next day" $ do
           zst <- getzst
-          formatZSTUTC zst utcOrigin' `shouldBe` "tomorrow 4:00 AM"
+          formatZSTUTC zst utcOrigin' `shouldBe` "tomorrow at 4:00 AM"
         it "handles other day" $ do
           zst' <- getzst'
-          formatZSTUTC zst' utcOrigin `shouldBe` "Friday, February 26th 4:00 PM"
+          formatZSTUTC zst' utcOrigin `shouldBe` "Friday, February 26th at 4:00 PM"
     describe "formatZSTUTCPair" $ do
         -- so getzst is 2/26/16 4pm
         -- so getzst' is local 2/27/16 4am
         it "handles different local days" $ do
           zst <- getzst
-          formatZSTUTCPair zst utcOrigin utcOrigin' `shouldBe` "today 4:00 PM until tomorrow 4:00 AM"
-          formatZSTUTCPair zst utcOrigin' (UTCTime (addDays 3 originDay) 0) `shouldBe` "tomorrow 4:00 AM until Monday, February 29th 4:00 PM"
+          formatZSTUTCPair zst utcOrigin utcOrigin' `shouldBe` "today at 4:00 PM until tomorrow at 4:00 AM"
+          formatZSTUTCPair zst utcOrigin' (UTCTime (addDays 3 originDay) 0) `shouldBe` "tomorrow at 4:00 AM until Monday, February 29th at 4:00 PM"
         it "handles same local days" $ do
           zst <- getzst
-          formatZSTUTCPair zst utcOrigin (UTCTime originDay (60*60)) `shouldBe` "today 4:00 PM until 5:00 PM"
-          formatZSTUTCPair zst utcOrigin' (UTCTime originDay (13*60*60)) `shouldBe` "tomorrow 4:00 AM until 5:00 AM"
+          formatZSTUTCPair zst utcOrigin (UTCTime originDay (60*60)) `shouldBe` "today at 4:00 PM until 5:00 PM"
+          formatZSTUTCPair zst utcOrigin' (UTCTime originDay (13*60*60)) `shouldBe` "tomorrow at 4:00 AM until 5:00 AM"

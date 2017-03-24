@@ -58,7 +58,7 @@ spec = do
           slotUtc (last x) `shouldBe` UTCTime (addDays 1 originDay) (7*60*60)
           slotLocal (head x) `shouldBe` LocalTime originDay midnight
           slotLocal (last x) `shouldBe` LocalTime originDay (TimeOfDay 23 0 0)
-          slotDisplay (head x) `shouldBe` "12:00 AM"
+          slotDisplay (head x) `shouldBe` "midnight"
           slotDisplay (last x) `shouldBe` "11:00 PM"
           length x `shouldBe` 24
 
@@ -70,7 +70,7 @@ spec = do
           slotUtc (last x) `shouldBe` UTCTime (addDays 1 summerDay) (6*60*60)
           slotLocal (head x) `shouldBe` LocalTime summerDay midnight
           slotLocal (last x) `shouldBe` LocalTime summerDay (TimeOfDay 23 0 0)
-          slotDisplay (head x) `shouldBe` "12:00 AM"
+          slotDisplay (head x) `shouldBe` "midnight"
           slotDisplay (last x) `shouldBe` "11:00 PM"
           length x `shouldBe` 24
         it "handles PST -> PDT day" $ do
@@ -81,7 +81,7 @@ spec = do
           slotUtc (last x) `shouldBe` UTCTime (addDays 1 pstToPdtDay) (6*60*60)
           slotLocal (head x) `shouldBe` LocalTime pstToPdtDay midnight
           slotLocal (last x) `shouldBe` LocalTime pstToPdtDay (TimeOfDay 23 0 0)
-          slotDisplay (head x) `shouldBe` "12:00 AM"
+          slotDisplay (head x) `shouldBe` "midnight"
           slotDisplay (last x) `shouldBe` "11:00 PM"
           length x `shouldBe` 23
         it "handles PDT -> PST day" $ do
@@ -92,6 +92,6 @@ spec = do
           slotUtc (last x) `shouldBe` UTCTime (addDays 1 pdtToPstDay) (7*60*60)
           slotLocal (head x) `shouldBe` LocalTime pdtToPstDay midnight
           slotLocal (last x) `shouldBe` LocalTime pdtToPstDay (TimeOfDay 23 0 0)
-          slotDisplay (head x) `shouldBe` "12:00 AM"
+          slotDisplay (head x) `shouldBe` "midnight"
           slotDisplay (last x) `shouldBe` "11:00 PM"
           length x `shouldBe` 25

@@ -69,18 +69,20 @@ formatDay today day   | today == day              = "today"
                       | otherwise                 = [i|#{formatWeekDay day}, #{formatMonth day} #{formatDayN day}, #{year day}|]
 
 formatTime :: TimeOfDay -> T.Text
-formatTime tod@TimeOfDay{..} = [i|#{hour}:#{minutePad}#{todMin} #{ampm}|]
-  where
-    hour = case todHour `mod` 12 of
-      0 -> 12
-      x -> x
-    minutePad = if todMin < 10 then "0" else ""
-    ampm = if todHour < 12 then "AM" else "PM"
+formatTime tod@TimeOfDay{..}  | tod == midday     = "noon"
+                              | tod == midnight   = "midnight"
+                              | otherwise         = [i|#{hour}:#{minutePad}#{todMin} #{ampm}|]
+    where
+      hour = case todHour `mod` 12 of
+        0 -> 12
+        x -> x
+      minutePad = if todMin < 10 then "0" else ""
+      ampm = if todHour < 12 then "AM" else "PM"
 
 formatZSTUTC' :: Bool -> ZoneSeriesTime -> UTCTime -> T.Text
 formatZSTUTC' showDay zonedSeriesTime utcToFormat =
   if showDay
-    then [i|#{formatDay startDay localDayToFormat} #{formatTime localTimeOfDayToFormat}|]
+    then [i|#{formatDay startDay localDayToFormat} at #{formatTime localTimeOfDayToFormat}|]
     else formatTime localTimeOfDayToFormat
   where
     startDay = (localDay.zoneSeriesTimeToLocalTime) zonedSeriesTime

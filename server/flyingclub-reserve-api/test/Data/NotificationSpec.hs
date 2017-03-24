@@ -86,7 +86,7 @@ runInDb sql = runSqlite ":memory:" $ do
     insertKey rk $ S.Reservation
       i2 ia1
       (UTCTime (fromGregorian 2016 02 27) (15*60*60))
-      (UTCTime (fromGregorian 2016 02 27) (16*60*60))
+      (UTCTime (fromGregorian 2016 02 27) (20*60*60))
       Nothing False ""
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
@@ -104,8 +104,8 @@ runInDb sql = runSqlite ":memory:" $ do
       Nothing False ""
     sql (SampleData i1 i2 i4 i3 ia1 ia2 ia3 rk1 ork)
 
-sampleOfficerUser = S.User "test1f" "test1l" Officer Nothing
-samplePilotUser = S.User "test1f" "test1l" Pilot Nothing
+sampleOfficerUser = S.User "testof" "testol" Officer Nothing
+samplePilotUser = S.User "testpf" "testpl" Pilot Nothing
 sampleSocialUser = S.User "test1f" "test1l" Social Nothing
 sampleNAUser = S.User "test1f" "test1l" NoAccess Nothing
 
@@ -137,10 +137,24 @@ getzst origin = do
 spec :: Spec
 spec = do
   describe "parsedActionResultResponse" $ do
-        it "check no results" $ runInDb $ \sd -> do
+        it "check future day with results" $ runInDb $ \sd -> do
             zst <- liftIO $ getzst utcOriginP
             airplanes <- runAuthorizedAction (pilotUser sd) getAirplanes
             users <- runAuthorizedAction (pilotUser sd) getUsers
             r <- runParsedAction zst (pilotUser sd) $ Check "073" originDay
             liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
-              `shouldBe` "TODO"
+              `shouldBe` "The airplane is scheduled by testpf testpl Saturday, February 27th at midnight until 2:00 AM, and by testof testol Saturday, February 27th at 4:00 AM until 7:00 AM, and by testpf testpl Saturday, February 27th at 7:00 AM until noon"
+        it "check current day with partial results" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOrigin
+            airplanes <- runAuthorizedAction (pilotUser sd) getAirplanes
+            users <- runAuthorizedAction (pilotUser sd) getUsers
+            r <- runParsedAction zst (pilotUser sd) $ Check "073" originDay
+            liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
+              `shouldBe` "The airplane is scheduled by testof testol today at 4:00 AM until 7:00 AM, and by testpf testpl today at 7:00 AM until noon"
+        it "check future day with no results" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOrigin
+            airplanes <- runAuthorizedAction (pilotUser sd) getAirplanes
+            users <- runAuthorizedAction (pilotUser sd) getUsers
+            r <- runParsedAction zst (pilotUser sd) $ Check "073" originDayF
+            liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
+              `shouldBe` "This airplane is available for the entire day"
