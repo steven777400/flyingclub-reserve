@@ -158,3 +158,25 @@ spec = do
             r <- runParsedAction zst (pilotUser sd) $ Check "073" originDayF
             liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
               `shouldBe` "This airplane is available for the entire day"
+
+        it "review future day with results" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOriginP
+            airplanes <- runAuthorizedAction (pilotUser sd) getAirplanes
+            users <- runAuthorizedAction (pilotUser sd) getUsers
+            r <- runParsedAction zst (pilotUser sd) $ Review originDay
+            liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
+              `shouldBe` "You're reserved in 54073 cessna 172 Saturday, February 27th at midnight until 2:00 AM, and in 54073 cessna 172 Saturday, February 27th at 7:00 AM until noon"
+        it "review current day with partial results" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOrigin
+            airplanes <- runAuthorizedAction (pilotUser sd) getAirplanes
+            users <- runAuthorizedAction (pilotUser sd) getUsers
+            r <- runParsedAction zst (pilotUser sd) $ Review originDay
+            liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
+              `shouldBe` "You're reserved in 54073 cessna 172 today at 7:00 AM until noon"
+        it "review future day with no results" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOrigin
+            airplanes <- runAuthorizedAction (pilotUser sd) getAirplanes
+            users <- runAuthorizedAction (pilotUser sd) getUsers
+            r <- runParsedAction zst (pilotUser sd) $ Review originDayF
+            liftIO $ runReader (parsedActionResultResponse r) (Context SMS zst airplanes users)
+              `shouldBe` "You have no reservations for the time period"

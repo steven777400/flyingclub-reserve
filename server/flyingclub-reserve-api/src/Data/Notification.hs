@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -21,8 +22,14 @@ data Context = Context
   , users     :: [Entity User]
   }
 
+find :: Eq (Key a) => Key a -> (Context -> [Entity a]) -> Context -> a
+find k es = entityVal.head.(filter (\u->k == entityKey u)).es
+
 userName :: Key User -> Reader Context T.Text
-userName userId = asks $ (\u->userFirstname u <> " " <> userLastname u).entityVal.head.(filter (\u->userId == entityKey u)).users
+userName userId = asks $ (\u->userFirstname u <> " " <> userLastname u).find userId users
+
+airplane :: Key Airplane -> Reader Context T.Text
+airplane airplaneId = asks $ (\a->airplaneTail a <> " " <> airplaneDescription a).find airplaneId airplanes
 
 parsedActionResultResponse :: ParsedActionResult -> Reader Context T.Text
 parsedActionResultResponse par = case par of
@@ -34,3 +41,12 @@ parsedActionResultResponse par = case par of
         return $ name <> " " <> formatZSTUTCPair zst (reservationStart res) (reservationEnd res)
       ) reses
     return $ "The airplane is scheduled by " <> (T.intercalate ", and by " entries)
+
+  ReviewResult [] -> return "You have no reservations for the time period"
+  ReviewResult reses -> do
+    entries <- mapM (\(Entity _ res) -> do
+        plane <- airplane $ reservationAirplaneId res
+        zst <- asks zst
+        return $ plane <> " " <> formatZSTUTCPair zst (reservationStart res) (reservationEnd res)
+      ) reses
+    return $ "You're reserved in " <> (T.intercalate ", and in " entries)
