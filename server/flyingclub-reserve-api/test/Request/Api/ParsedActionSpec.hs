@@ -204,3 +204,38 @@ spec = do
 
             ex <- (try (runParsedAction zst (pilotUser sd) $ Reserve "074" utcOrigin (addUTCTime 3600 utcOrigin))) :: S.SqlM (Either FormatException ParsedActionResult)
             liftIO $ isLeft ex `shouldBe` True
+  describe "cancel" $ do
+        it "finds matching reservations" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOriginF
+            runParsedAction zst (officerUser sd) $ Reserve "073" utcOriginF (addUTCTime 3600 utcOriginF)
+
+            CancelResult r True <- runParsedAction zst (officerUser sd) $ Cancel Nothing utcOriginF
+
+            ex <- (try (runParsedAction zst (officerUser sd) $ Cancel Nothing utcOriginF)) :: S.SqlM (Either ConflictException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+        it "finds matching reservations various time" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOriginF
+            runParsedAction zst (officerUser sd) $ Reserve "073" utcOriginF (addUTCTime 3600 utcOriginF)
+            CancelResult r True <- runParsedAction zst (officerUser sd) $ Cancel Nothing utcOriginF
+
+            runParsedAction zst (officerUser sd) $ Reserve "073" utcOriginF (addUTCTime 3600 utcOriginF)
+            CancelResult r True <- runParsedAction zst (officerUser sd) $ Cancel Nothing (addUTCTime 3500 utcOriginF)
+
+            runParsedAction zst (officerUser sd) $ Reserve "073" utcOriginF (addUTCTime 3600 utcOriginF)
+            CancelResult r True <- runParsedAction zst (officerUser sd) $ Cancel Nothing (addUTCTime 1200 utcOriginF)
+
+            runParsedAction zst (officerUser sd) $ Reserve "073" utcOriginF (addUTCTime 3600 utcOriginF)
+            ex <- (try (runParsedAction zst (officerUser sd) $ Cancel Nothing (addUTCTime 3600 utcOriginF))) :: S.SqlM (Either ConflictException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+
+        it "finds matching reservations with explicit tail" $ runInDb $ \sd -> do
+            zst <- liftIO $ getzst utcOriginF
+            runParsedAction zst (officerUser sd) $ Reserve "073" utcOriginF (addUTCTime 3600 utcOriginF)
+
+            ex <- (try (runParsedAction zst (officerUser sd) $ Cancel (Just "349") utcOriginF)) :: S.SqlM (Either ConflictException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True
+
+            CancelResult r True <- runParsedAction zst (officerUser sd) $ Cancel (Just "073") utcOriginF
+
+            ex <- (try (runParsedAction zst (officerUser sd) $ Cancel (Just "073") utcOriginF)) :: S.SqlM (Either ConflictException ParsedActionResult)
+            liftIO $ isLeft ex `shouldBe` True

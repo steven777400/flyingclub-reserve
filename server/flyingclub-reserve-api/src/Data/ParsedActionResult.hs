@@ -6,8 +6,7 @@ import           Database.Persist.Sql
 data ParsedActionResult =
   CheckResult [Entity Reservation] |
   ReviewResult [Entity Reservation] |
-  ReserveResult (Entity Reservation)
-
-  --Reserve TailNumber UTCTime UTCTime |
-  --Cancel (Maybe TailNumber) UTCTime |
+  ReserveResult (Entity Reservation) |
+  CancelResult  (Entity Reservation) Bool -- True if fully deleted, false is truncated
+  
   --Update UTCTime -- extend the current reservation to the given new end time

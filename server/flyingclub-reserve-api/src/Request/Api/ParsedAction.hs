@@ -1,5 +1,6 @@
 module Request.Api.ParsedAction (runParsedAction) where
 
+import           Control.Exception.Conflict
 import           Control.Exception.Format
 import           Control.Exception.StackError
 import           Control.Monad
@@ -66,8 +67,26 @@ reserve userId tailn begin end = do
       return $ ReserveResult (Entity resid res)
       )
 
+cancel :: Key User -> Maybe TailNumber -> UTCTime -> SqlM ParsedActionResult
+cancel userId tailn time = do
+  reses <- runAuthorizedAction userId (getReservations time time)
+  let res' = filterE (\x->
+        -- just the user
+        reservationUserId x == userId) reses
+  let f res'' = case res'' of
+        [] -> throw (ConflictException "No reservation at that time period")
+        [r] -> runAuthorizedAction userId (deleteReservation (entityKey r)) >>= \b->return (CancelResult r b)
+        _ -> throw (ConflictException "Multiple reservations at that time period")
+  case tailn of
+    Nothing -> f res'
+    Just t -> singlePlane userId t (\p->f $ filterE (\x->reservationAirplaneId x == entityKey p) res')
+
+
+
+
 runParsedAction :: ZoneSeriesTime -> Key User -> ParsedAction -> SqlM ParsedActionResult
 runParsedAction zst userId pa = case pa of
   Check tailn day         -> check zst userId tailn day
   Review day              -> review zst userId day
   Reserve tailn begin end -> reserve userId tailn begin end
+  Cancel tailn time       -> cancel userId tailn time

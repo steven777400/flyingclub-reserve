@@ -122,12 +122,12 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 20) (10*60*60)) )
             liftIO $ length r `shouldBe` 2
 
-            -- match sure it doesn't pick up on the edge
+            -- change: it picks up on the leading edge .  Didn't want to but need to for cancel at the moment
             r <- runAuthorizedAction (pilotUser sd) (
               getReservations
                 (UTCTime (fromGregorian 2027 01 20) (12*60*60))
                 (UTCTime (fromGregorian 2027 01 20) (15*60*60)) )
-            liftIO $ length r `shouldBe` 1
+            liftIO $ length r `shouldBe` 2
 
             r <- runAuthorizedAction (pilotUser sd) (
               getReservations
@@ -196,12 +196,12 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 20) (10*60*60)) )
             liftIO $ length r `shouldBe` 3
 
-            -- match sure it doesn't pick up on the edge
+            -- change: it picks up on the leading edge .  Didn't want to but need to for cancel at the moment
             r <- runAuthorizedAction (officerUser sd) (
               getReservationsDeleted
                 (UTCTime (fromGregorian 2027 01 20) (12*60*60))
                 (UTCTime (fromGregorian 2027 01 20) (15*60*60)) )
-            liftIO $ length r `shouldBe` 2
+            liftIO $ length r `shouldBe` 3
 
             r <- runAuthorizedAction (officerUser sd) (
               getReservationsDeleted
@@ -580,7 +580,7 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 20) (7*60*60))
                 (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
             -- do update
-            runAuthorizedAction (officerUser sd) (
+            fullyDeleted <- runAuthorizedAction (officerUser sd) (
               deleteReservation (pilotRes sd))
 
             -- confirm update
@@ -589,7 +589,7 @@ spec = do
                 (UTCTime (fromGregorian 2027 01 20) (7*60*60))
                 (UTCTime (fromGregorian 2027 01 20) (17*60*60)) )
             liftIO $ length r `shouldBe` (n-1)
-
+            liftIO $ fullyDeleted `shouldBe` True
             n <- getPendingNotifications
             liftIO $ length n `shouldBe` 1
 
@@ -622,7 +622,7 @@ spec = do
 
             ex <- (try (runAuthorizedAction (pilotUser sd) (
               deleteReservation (officerRes sd)
-                ))) :: S.SqlM (Either UnauthorizedException ())
+                ))) :: S.SqlM (Either UnauthorizedException Bool)
             liftIO $ isLeft ex `shouldBe` True
             -- confirm NO delete
             r <- runAuthorizedAction (pilotUser sd) (
@@ -654,7 +654,7 @@ spec = do
               (UTCTime (fromGregorian 2016 01 20) (8*60*60))
               (UTCTime (fromGregorian 2027 01 20) (10*60*60))
               Nothing False ""
-            runAuthorizedAction (officerUser sd) (deleteReservation
+            fullyDeleted <- runAuthorizedAction (officerUser sd) (deleteReservation
               rk
               )
             r <- runAuthorizedAction (pilotUser sd) (
@@ -667,3 +667,5 @@ spec = do
                 (UTCTime (fromGregorian 2026 01 20) (7*60*60))
                 (UTCTime (fromGregorian 2026 01 20) (17*60*60)) )
             liftIO $ length r `shouldBe` 0
+
+            liftIO $ fullyDeleted `shouldBe` False

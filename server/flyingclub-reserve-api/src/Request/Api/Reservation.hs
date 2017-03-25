@@ -14,7 +14,7 @@ import           Database.Persist.Audit.Operations
 import           Database.Persist.Owner.Operations
 import           Database.Persist.Notification
 import qualified Database.Persist.Schema           as S
-import           Database.Persist.Sql              ((<.), (=.), (==.), (>.))
+import           Database.Persist.Sql              ((<.), (=.), (==.), (>.), (<=.))
 import qualified Database.Persist.Sql              as DB
 import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
@@ -36,7 +36,7 @@ import           Request.Api.AuthorizedAction
 
 makeReservationFilter :: UTCTime -> UTCTime -> [DB.Filter S.Reservation]
 makeReservationFilter start end =
-  [S.ReservationStart <. end, S.ReservationEnd >. start]
+  [S.ReservationStart <=. end, S.ReservationEnd >. start]
 
 reservationSort :: DB.SelectOpt (S.Reservation)
 reservationSort = DB.Asc (S.ReservationStart)
@@ -64,7 +64,7 @@ completeResTransaction userId (DB.Entity resId res@S.Reservation{..}) =
     overlap <- DB.selectList
       ((S.ReservationAirplaneId ==. reservationAirplaneId):notDeleted:(makeReservationFilter reservationStart reservationEnd)) []
     let (mine, others) = partition (\r -> DB.entityKey r == resId) overlap
-    when (length mine /= 1) $ DB.transactionUndo >> throw (ConflictException "Error insert/update reservation")
+    when (length mine /= 1) $ DB.transactionUndo >> throw (ConflictException "Failed to insert/update reservation")
     mapM_ (\r -> delete userId (DB.entityKey r)) others
     DB.transactionSave
     mapM_ (\r -> sendNotification (S.reservationUserId $ DB.entityVal r) "TODO") others
@@ -75,7 +75,7 @@ completeResTransaction userId (DB.Entity resId res@S.Reservation{..}) =
     -- should be exactly 1, the 1 we just inserted or updated
     case overlap of
       0 -> DB.transactionUndo >>
-        throw (ConflictException "Error insert/update reservation")
+        throw (ConflictException "Failed to insert/update reservation")
       1 -> DB.transactionSave
       _ -> DB.transactionUndo >>
         throw (ConflictException "Another reservation already exists for that airplane at that time")
@@ -130,7 +130,7 @@ updateReservation resId start end =
       completeResTransaction userId (DB.Entity resId res')
       when (userId /= reservationUserId) $ sendNotification reservationUserId "TODO"
 
-deleteReservation :: DB.Key S.Reservation -> AuthorizedAction ()
+deleteReservation :: DB.Key S.Reservation -> AuthorizedAction Bool -- True if fully deleted, false is truncated
 deleteReservation resId =
   (authorize Officer ur) <> -- officer deletes for anyone
   (authorizeUserM auth Pilot ur) -- pilot deletes for themselves. We have to look up who that is, though!
@@ -143,8 +143,9 @@ deleteReservation resId =
       DB.transactionSave
       when (reservationEnd < now) $
         throw (ConflictException "Can't delete reservation that is already ended")
-      if reservationStart < now then
-          update userId resId [S.ReservationEnd =. now] >> return ()
+      result <- if reservationStart < now then
+          update userId resId [S.ReservationEnd =. now] >> return False
       else
-          delete userId resId
+          delete userId resId >> return True
       when (userId /= reservationUserId) $ sendNotification reservationUserId "TODO"
+      return result
