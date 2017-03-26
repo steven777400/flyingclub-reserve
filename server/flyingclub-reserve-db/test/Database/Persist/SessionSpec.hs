@@ -5,6 +5,7 @@ import           Control.Monad.Trans
 import           Data.Aeson
 import           Data.Maybe
 import           Data.Time.Clock
+import           Database.Persist.Environment.Sqlite (runInMemory)
 import           Database.Persist.Schema
 import           Database.Persist.Sqlite
 import           Database.Persist.Types.PhoneNumber
@@ -13,11 +14,11 @@ import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
 import           System.Random
 
-import qualified Database.Persist.Session           as S
+import qualified Database.Persist.Session            as S
 import           Test.Hspec
 
-runInDb :: SqlPersistM a -> IO a
-runInDb sql = runSqlite ":memory:" $ do
+runInDb :: SqlM a -> IO a
+runInDb sql = runInMemory $ do
     runAdjustedMigration
     sql
 

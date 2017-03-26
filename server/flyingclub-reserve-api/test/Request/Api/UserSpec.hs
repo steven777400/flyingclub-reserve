@@ -5,8 +5,9 @@ import           Control.Exception.Unauthorized
 import           Control.Monad.Trans
 import           Data.Aeson
 import           Data.Time.Clock
-import qualified Database.Persist.Audit.Operations  as A
-import qualified Database.Persist.Schema            as S
+import qualified Database.Persist.Audit.Operations   as A
+import           Database.Persist.Environment.Sqlite (runInMemory)
+import qualified Database.Persist.Schema             as S
 import           Database.Persist.Sqlite
 import           Database.Persist.Types.PhoneNumber
 import           Database.Persist.Types.UserType
@@ -20,8 +21,8 @@ import           Test.Hspec
 anyUnauthorizedException :: Selector UnauthorizedException
 anyUnauthorizedException = const True
 
-runInDb :: SqlPersistM a -> IO a
-runInDb sql = runSqlite ":memory:" $ do
+runInDb :: S.SqlM a -> IO a
+runInDb sql = runInMemory $ do
     S.runAdjustedMigration
     sql
 

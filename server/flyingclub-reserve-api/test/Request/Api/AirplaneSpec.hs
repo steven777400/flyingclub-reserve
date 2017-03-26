@@ -9,9 +9,10 @@ import           Data.Aeson
 import           Data.Either
 import           Data.Time.Calendar
 import           Data.Time.Clock
-import qualified Database.Persist.Audit.Operations  as A
+import qualified Database.Persist.Audit.Operations   as A
+import           Database.Persist.Environment.Sqlite (runInMemory)
 import           Database.Persist.Notification
-import qualified Database.Persist.Schema            as S
+import qualified Database.Persist.Schema             as S
 import           Database.Persist.Sqlite
 import           Database.Persist.Types.PhoneNumber
 import           Database.Persist.Types.UserType
@@ -40,8 +41,8 @@ data SampleData = SampleData {
 
 }
 
-runInDb :: (SampleData -> SqlPersistM a) -> IO a
-runInDb sql = runSqlite ":memory:" $ do
+runInDb :: (SampleData -> S.SqlM a) -> IO a
+runInDb sql = runInMemory $ do
     S.runAdjustedMigration
     i1 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
     i2 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)

@@ -2,8 +2,8 @@
 module Request.Api.ParsedActionSpec where
 
 import           Control.Exception.Conflict
-import           Control.Exception.Unauthorized
 import           Control.Exception.Format
+import           Control.Exception.Unauthorized
 import           Control.Monad.Catch
 import           Control.Monad.Trans
 import           Data.Aeson
@@ -13,6 +13,7 @@ import           Data.Time.Clock
 import           Data.Time.LocalTime.TimeZone.Olson
 import           Data.Time.LocalTime.TimeZone.Series
 import qualified Database.Persist.Audit.Operations   as A
+import           Database.Persist.Environment.Sqlite (runInMemory)
 import           Database.Persist.Notification
 import qualified Database.Persist.Schema             as S
 import           Database.Persist.Sqlite
@@ -37,7 +38,7 @@ anyConflictException = const True
 data SampleData = SampleData {
   officerUser :: Key S.User,
   pilotUser   :: Key S.User,
-  socialUser   :: Key S.User,
+  socialUser  :: Key S.User,
   naUser      :: Key S.User,
   n073        :: Key S.Airplane,
   n349        :: Key S.Airplane,
@@ -47,8 +48,8 @@ data SampleData = SampleData {
 
 }
 
-runInDb :: (SampleData -> SqlPersistM a) -> IO a
-runInDb sql = runSqlite ":memory:" $ do
+runInDb :: (SampleData -> S.SqlM a) -> IO a
+runInDb sql = runInMemory $ do
     S.runAdjustedMigration
     i1 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
     i2 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)

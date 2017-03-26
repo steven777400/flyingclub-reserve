@@ -1,35 +1,35 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.NotificationSpec where
 
-
 import           Control.Exception.Conflict
 import           Control.Exception.Unauthorized
 import           Control.Monad.Catch
+import           Control.Monad.Reader
 import           Control.Monad.Trans
 import           Data.Aeson
 import           Data.Either
 import           Data.Time.Calendar
 import           Data.Time.Clock
-import qualified Database.Persist.Audit.Operations  as A
+import           Data.Time.LocalTime.TimeZone.Olson
+import           Data.Time.LocalTime.TimeZone.Series
+import qualified Database.Persist.Audit.Operations   as A
+import           Database.Persist.Environment.Sqlite (runInMemory)
 import           Database.Persist.Notification
-import qualified Database.Persist.Schema            as S
+import qualified Database.Persist.Schema             as S
 import           Database.Persist.Sqlite
 import           Database.Persist.Types.PhoneNumber
 import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
 import           Request.Api.AuthorizedAction
 import           System.Random
-import           Data.Time.LocalTime.TimeZone.Olson
-import           Data.Time.LocalTime.TimeZone.Series
-import Control.Monad.Reader
 
-import           Request.Api.Reservation
-import           Request.Api.User
+import           Data.Notification
+import           Data.ParsedAction
+import           Data.ParsedActionResult
 import           Request.Api.Airplane
 import           Request.Api.ParsedAction
-import Data.ParsedAction
-import Data.ParsedActionResult
-import Data.Notification
+import           Request.Api.Reservation
+import           Request.Api.User
 import           Test.Hspec
 
 
@@ -52,8 +52,8 @@ data SampleData = SampleData {
 
 }
 
-runInDb :: (SampleData -> SqlPersistM a) -> IO a
-runInDb sql = runSqlite ":memory:" $ do
+runInDb :: (SampleData -> S.SqlM a) -> IO a
+runInDb sql = runInMemory $ do
     S.runAdjustedMigration
     i1 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
     i2 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)

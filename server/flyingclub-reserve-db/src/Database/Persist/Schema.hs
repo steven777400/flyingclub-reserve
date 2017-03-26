@@ -109,7 +109,7 @@ Audit
 |]
 
 -- TODO BEGIN MOVE
-type SqlM o = ReaderT SqlBackend (NoLoggingT (ResourceT IO)) o
+type SqlM o = ReaderT SqlBackend (LoggingT (ResourceT IO)) o
 
 -- Non-int keys don't work with migration and foreign key
 -- See https://github.com/yesodweb/persistent/issues/455

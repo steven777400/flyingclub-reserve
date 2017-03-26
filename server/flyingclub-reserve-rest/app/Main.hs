@@ -2,6 +2,7 @@
 module Main where
 
 import           Control.Monad.Trans
+import           Control.Monad.Logger
 import           Data.ReserveRoute
 import qualified Database.Persist.Audit.Operations        as A
 import qualified Database.Persist.Environment.Environment as DBE
@@ -25,7 +26,7 @@ insertDevData = do
   A.insert i1 $ Email i1 "home" "steve@kolls.net" True True Nothing
   a1 <- liftIO $ AuthenticationKey <$> (randomIO :: IO UUID)
   insertKey a1 $ Authentication i1 0 (toPIN "1234")
-
+  logDebugN "Done inserting dev data"
 
 dev :: IO ()
 dev = do
