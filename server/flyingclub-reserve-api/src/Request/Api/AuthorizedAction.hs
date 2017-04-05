@@ -1,5 +1,6 @@
 module Request.Api.AuthorizedAction (AuthorizedAction,
     authorize, authorizeCond, authorizeUserM, authorizeUser,
+    authorizeOwnerOfficer, authorizeOwnerOfficerUpdate,
     (<>),     -- re-export from Data.Semigroup
     runAuthorizedAction) where
 
@@ -7,7 +8,9 @@ import           Control.Exception.StackError
 import           Control.Exception.Unauthorized
 import           Data.Semigroup
 import           Database.Persist
-import           Database.Persist.Audit.Operations
+import qualified Database.Persist.Audit.Class      as A
+import qualified Database.Persist.Audit.Operations as A
+import qualified Database.Persist.Owner.Class      as O
 import           Database.Persist.Schema
 import           Database.Persist.Types.UserType
 import           Prelude                           hiding (error)
@@ -29,9 +32,19 @@ authorizeUserM :: SqlM (Key User) -> UserType -> (Entity User -> SqlM o) -> Auth
 authorizeUserM reqUserIdM userType = authorizeCond (\(Entity actUserId user) -> reqUserIdM >>= \reqUserId ->
     return $ reqUserId == actUserId && userPermission user >= userType)
 
-
 authorizeUser :: Key User -> UserType -> (Entity User -> SqlM o) -> AuthorizedAction o
 authorizeUser reqUserId = authorizeUserM (return reqUserId)
+
+authorizeOwnerOfficer :: (A.Audit a, O.Owner a) => Key a -> (Entity User -> SqlM o) -> AuthorizedAction o
+authorizeOwnerOfficer objectId action =
+  (authorize Officer action) <> -- officer updates for anyone
+  (authorizeUserM auth Social action) -- social updates for themselves. We have to look up who that is, though!
+  where
+    auth = A.getNotDeletedOrNotFound objectId >>= return.(O.owner).entityVal
+
+authorizeOwnerOfficerUpdate :: (A.Audit a, O.Owner a) => Key a -> [Update a] -> AuthorizedAction a
+authorizeOwnerOfficerUpdate objectId updates = authorizeOwnerOfficer objectId (\user->A.update (entityKey user) objectId updates)
+
 
 instance Semigroup (AuthorizedAction a) where
     (<>) (AuthorizedAction a1) (AuthorizedAction a2) = AuthorizedAction $ \euser -> do
@@ -43,7 +56,7 @@ instance Semigroup (AuthorizedAction a) where
 
 runAuthorizedAction :: Key User -> AuthorizedAction o -> SqlM o
 runAuthorizedAction userId (AuthorizedAction auth) = do
-    user <- getOrNotFound userId
+    user <-  A.getOrNotFound userId
     res <- auth user
     case res of
       Just r1 -> return r1

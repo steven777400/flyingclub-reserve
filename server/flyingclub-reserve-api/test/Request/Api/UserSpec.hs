@@ -10,6 +10,7 @@ import           Database.Persist.Environment.Sqlite (runInMemory)
 import qualified Database.Persist.Schema             as S
 import           Database.Persist.Sqlite
 import           Database.Persist.Types.PhoneNumber
+import           Database.Persist.Types.PIN
 import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
 import           Request.Api.AuthorizedAction
@@ -148,3 +149,18 @@ spec = do
 
             runAuthorizedAction i0 $ getUserDetails i0
             ) `shouldThrow` anyUnauthorizedException
+    describe "createUser" $ do
+        it "creates valid user" $ runInDb $ do
+          i1 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
+          insertKey i1 sampleOfficerUser
+
+          runAuthorizedAction i1 (createUser samplePilotUser $ toPIN "1234")
+
+          users <- runAuthorizedAction i1 getUsers
+          liftIO $ length users `shouldBe` 2
+        it "throws for non officer users" $ (runInDb $ do
+          i0 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
+          insertKey i0 samplePilotUser
+
+          runAuthorizedAction i0 (createUser sampleSocialUser $ toPIN "1234")
+          ) `shouldThrow` anyUnauthorizedException
