@@ -112,10 +112,8 @@ createReservation res@S.Reservation{..} =
 -- we only allow update to change start and end time
 updateReservation :: DB.Key S.Reservation -> UTCTime -> UTCTime -> AuthorizedAction ()
 updateReservation resId start end =
-  (authorize Officer ur) <> -- officer updates for anyone
-  (authorizeUserM auth Pilot ur) -- pilot updates for themselves. We have to look up who that is, though!
-  where
-    auth = getNotDeletedOrNotFound resId >>= return.(S.reservationUserId).(DB.entityVal)
+  authorizeOwnerOfficer resId ur
+  where    
     ur user = (DB.entityVal <$> getNotDeletedOrNotFound resId) >>= updateRes user
     updateRes user res@S.Reservation{..} = do
       now <- liftIO getCurrentTime
