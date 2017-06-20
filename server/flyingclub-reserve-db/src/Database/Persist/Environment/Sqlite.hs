@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Database.Persist.Environment.Sqlite where
 
+import           Control.Concurrent                       (myThreadId)
 import           Control.Monad                            (when)
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Trans.Resource
 import           Data.Pool
+import           Data.Text
 import           Database.Persist.Environment.Environment
 import           Database.Persist.Schema
 import           Database.Persist.Sqlite
@@ -16,8 +18,10 @@ runInMemory = runResourceT . runStderrLoggingT . withSqliteConn ":memory:" . run
 
 runInDb :: IO Environment
 runInDb = do
-  doesFileExist "test.sqlite" >>= flip when (removeFile "test.sqlite")
-  runStderrLoggingT $ withSqlitePool "test.sqlite" 1 $ \pool -> liftIO $ do
+  tid <- myThreadId
+  let sqlfile = "test" ++ (show tid) ++".sqlite"
+  doesFileExist sqlfile >>= flip when (removeFile sqlfile)
+  runStderrLoggingT $ withSqlitePool (pack sqlfile) 1 $ \pool -> liftIO $ do
     runPool pool runAdjustedMigration
     return $ Environment $ runPool pool
   where

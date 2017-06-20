@@ -13,6 +13,6 @@ cabal.sandbox.config
 .stack-work/
 cabal.project.local
 report.html
-test.sqlite
-test.sqlite-shm
-test.sqlite-wal
+test*.sqlite
+test*.sqlite-shm
+test*.sqlite-wal
