@@ -18,7 +18,7 @@ library
   exposed-modules:     Data.ReserveRoute, Web.Application, Web.Authentication, Web.ErrorHandler, Web.Route,
     Web.Api.Session, Web.Api.User
   build-depends:       base >= 4.7 && < 5,
-    wai, http-types, wai-routes, wai-extra, mtl, persistent, bytestring, text, aeson,
+    wai, http-types, wai-routes, wai-extra, wai-cors, mtl, persistent, bytestring, text, aeson,
     flyingclub-reserve-api, exception-stacktrace, flyingclub-reserve-db
   default-language:    Haskell2010
 
