@@ -9,7 +9,7 @@ import           Web.ErrorHandler
 import           Web.Route
 
 appCors :: Middleware
-appCors = cors (const $ Just simpleCorsResourcePolicy {corsRequestHeaders = ["Authorization", "Content-Type"] })
+appCors = cors (const $ Just simpleCorsResourcePolicy {corsRequestHeaders = ["Authorization", "Auth-Key", "Content-Type"] })
 
 application :: ReserveRoute -> Application
 application ctx = waiApp $ do
