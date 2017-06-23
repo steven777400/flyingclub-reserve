@@ -1,6 +1,6 @@
 import { autoserialize, autoserializeAs } from 'cerialize';
-import {MomentTransformer} from 'app/utility/MomentTransformer';
-import {Moment} from  'moment';
+import { MomentTransformer } from 'app/utility/moment-transformer';
+import { Moment } from  'moment';
 
 export class Session {
 
