@@ -26,8 +26,8 @@ import           Test.Hspec.Wai
 import           Data.ReserveRoute
 import qualified Database.Persist.Environment.Environment as DBE
 import           Database.Persist.Environment.Sqlite
+import qualified Web.Api.Session                          as S
 import           Web.Application
-import qualified Web.Api.Session                              as S
 
 
 sampleUser1 = User "test1f" "test1l" Officer Nothing
@@ -64,7 +64,7 @@ app :: IO Application
 app = do
   db <- runInDb
   (DBE.sql db) prepDb
-  return $ application $ ReserveRoute (DBE.sql db) id
+  return $ application $ ReserveRoute (DBE.sql db) id undefined
 
 spec :: Spec
 spec = with app $ do

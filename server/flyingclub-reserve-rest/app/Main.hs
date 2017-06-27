@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import           Control.Monad.Trans
 import           Control.Monad.Logger
+import           Control.Monad.Trans
 import           Data.ReserveRoute
+import           Data.Time.LocalTime.TimeZone.Olson
 import qualified Database.Persist.Audit.Operations        as A
 import qualified Database.Persist.Environment.Environment as DBE
 import           Database.Persist.Environment.Sqlite
@@ -30,8 +31,9 @@ insertDevData = do
 
 dev :: IO ()
 dev = do
+  tzs <- getTimeZoneSeriesFromOlsonFile "/usr/share/zoneinfo/America/Los_Angeles"
   db <- runInDb
   (DBE.sql db) insertDevData
-  Warp.run 8080 $ application $ ReserveRoute (DBE.sql db) logStdoutDev
+  Warp.run 8080 $ application $ ReserveRoute (DBE.sql db) logStdoutDev tzs
 
 main = dev

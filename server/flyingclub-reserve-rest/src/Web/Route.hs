@@ -3,16 +3,17 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE ViewPatterns          #-} -- EXTREME DANGER: Prettify removes this!
+{-# LANGUAGE ViewPatterns          #-}
 module Web.Route where
 
-import Data.ReserveRoute
-import Database.Persist.Schema
-import Network.HTTP.Types
-import Wai.Routes
-import Web.Api.Session
-import Web.Api.User
-import Web.Authentication
+import           Data.ReserveRoute
+import           Database.Persist.Schema
+import           Network.HTTP.Types
+import           Wai.Routes
+import           Web.Api.Reservation
+import           Web.Api.Session
+import           Web.Api.User
+import           Web.Authentication
 
 
 
@@ -22,7 +23,7 @@ mkRoute "ReserveRoute" [parseRoutes|
 /user/#UserId       UserR GET
 /login              LoginR POST
 /verifyAuth         VerifyAuthR GET
+/reservation        ReservationR POST
 |]
 
 
-getUserR x = undefined

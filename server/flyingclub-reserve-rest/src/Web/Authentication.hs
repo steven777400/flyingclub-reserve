@@ -24,9 +24,9 @@ extractSessionToken x = case extractBearerAuth x >>= return.keyFromValues.(:[]).
   _                  -> Nothing
 
 
-authorizedRoute :: ToJSON a => AuthorizedAction a -> Handler ReserveRoute
-authorizedRoute action = runHandlerM $ do
-    ReserveRoute{..} <- sub
+authorizedSession :: ToJSON a => (ReserveRoute -> ByteString -> Session -> SqlM (Either Status a)) -> Handler ReserveRoute
+authorizedSession f = runHandlerM $ do
+    rr@ReserveRoute{..} <- sub
     authHeader <- lookup hAuthorization <$> reqHeaders
     authKey <- reqHeader "auth-key"
     let sid = authHeader >>= extractSessionToken
@@ -39,11 +39,20 @@ authorizedRoute action = runHandlerM $ do
         let authm = session >>= (\x->return $ (Just (sessionAuthKey (entityVal x)) == sauthkey))
         case authm of
           Just True -> do
-            let (Just userid) = session >>= (return.sessionUserId.entityVal)
-            result <- liftIO $ sql $ runAuthorizedAction userid action            
-            json result
+            let (Just s) = entityVal <$> session
+            body <- rawBody
+            resstat <- liftIO $ sql $ f rr body s
+            case resstat of
+              Left stat    -> status stat
+              Right result -> json result
           _ -> status status401
       _ -> status status401
+
+authorizedRoute :: ToJSON a => AuthorizedAction a -> Handler ReserveRoute
+authorizedRoute action = authorizedSession $ const $ const $ \session -> do
+  let userId = sessionUserId session
+  result <- runAuthorizedAction userId action
+  return $ Right result
 
 
 -- for testing
