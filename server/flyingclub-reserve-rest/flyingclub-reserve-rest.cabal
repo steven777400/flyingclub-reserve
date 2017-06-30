@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Data.ReserveRoute, Web.Application, Web.Authentication, Web.ErrorHandler, Web.Route,
-    Web.Api.Session, Web.Api.User, Web.Api.Reservation
+    Web.Api.Session, Web.Api.User, Web.Api.Reservation,  Web.Api.Airplane
   build-depends:       base >= 4.7 && < 5,
     wai, http-types, wai-routes, wai-extra, wai-cors, mtl, persistent, bytestring, text, aeson, time, timezone-series,
     flyingclub-reserve-api, exception-stacktrace, flyingclub-reserve-db

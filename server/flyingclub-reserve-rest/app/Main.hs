@@ -27,6 +27,7 @@ insertDevData = do
   A.insert i1 $ Email i1 "home" "steve@kolls.net" True True Nothing
   a1 <- liftIO $ AuthenticationKey <$> (randomIO :: IO UUID)
   insertKey a1 $ Authentication i1 0 (toPIN "1234")
+  A.insert i1 $ Airplane "54073" "Cessna 172" Nothing
   logDebugN "Done inserting dev data"
 
 dev :: IO ()

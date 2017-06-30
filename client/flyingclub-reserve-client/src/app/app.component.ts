@@ -1,7 +1,12 @@
 import { Component } from '@angular/core';
 import { Headers, Http } from '@angular/http';
+import { Serialize, Deserialize } from 'cerialize';
+import { Moment } from  'moment';
+import * as moment from 'moment';
 
 import { Session } from 'app/models/Session';
+import { Reservation } from 'app/models/Reservation';
+import { Airplane } from 'app/models/Airplane';
 import { AuthenticationService } from 'app/services/authentication.service';
 
 class Login {
@@ -35,10 +40,27 @@ export class AppComponent {
         .then(s2 => {
           console.log(s2);
           this.http
-            .get("http://localhost:8080/users", {headers: this.authentication.getHeaders()})
+            .get("http://localhost:8080/airplanes", {headers: this.authentication.getHeaders()})
             .toPromise()
             .then(r2 => {
-              console.log(r2)
+              console.log(r2);     
+              const r2a:Airplane[] = Deserialize(r2.json(), Airplane);
+              console.log(r2a);
+              const o = new Reservation();
+              o.reservationAirplaneId = r2a[0].id;
+              o.reservationComment = "comment";
+              o.reservationMaintenance = false;
+              o.reservationUserId = s.sessionUserId;
+              o.reservationStart = moment([2017, 7, 14, 15, 25, 50]);
+              o.reservationEnd = moment([2017, 8, 14, 15, 25, 50]);
+              console.log(o);
+              console.log(Serialize(o));
+              this.http
+                .post("http://localhost:8080/reservation", Serialize(o), {headers: this.authentication.getHeaders()})
+                .toPromise()
+                .then(r3 => { console.log(r3); });
+
+              
             });
         });
         

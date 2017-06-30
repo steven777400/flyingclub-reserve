@@ -5,7 +5,7 @@ import * as moment from 'moment';
 
 export const MomentTransformer = {
   Serialize(value: any): string {
-    return value.toISOString();
+    return value.format("YYYY-MM-DDTHH:mm:ss");
   },
   Deserialize(json: any): any {    
     return moment(json);

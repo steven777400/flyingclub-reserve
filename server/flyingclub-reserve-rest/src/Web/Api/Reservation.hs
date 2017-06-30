@@ -4,6 +4,8 @@
 {-# LANGUAGE RecordWildCards   #-}
 module Web.Api.Reservation (postReservationR) where
 
+import           Control.Exception.Format
+import           Control.Exception.StackError
 import           Data.Aeson
 import           Data.ReserveRoute
 import qualified Data.Text                           as T
@@ -16,25 +18,24 @@ import qualified Request.Api.Reservation             as R
 import           Wai.Routes
 import           Web.Authentication
 
-
 data InputReservation = InputReservation {
-  userId      :: Key User,
-  airplaneId  :: Key Airplane,
-  localStart  :: LocalTime,
-  localEnd    :: LocalTime,
-  maintenance :: Bool,
-  comment     :: T.Text
+  reservationUserId      :: Key User,
+  reservationAirplaneId  :: Key Airplane,
+  reservationStart       :: LocalTime,
+  reservationEnd         :: LocalTime,
+  reservationMaintenance :: Bool,
+  reservationComment     :: T.Text
 } deriving (Generic, FromJSON)
 
 inputReservation :: TimeZoneSeries -> InputReservation -> Reservation
 inputReservation tzs ir@InputReservation{..} = Reservation
-  userId
-  airplaneId
-  (localTimeToUTC' tzs localStart)
-  (localTimeToUTC' tzs localEnd)
+  reservationUserId
+  reservationAirplaneId
+  (localTimeToUTC' tzs reservationStart)
+  (localTimeToUTC' tzs reservationEnd)
   Nothing
-  maintenance
-  comment
+  reservationMaintenance
+  reservationComment
 
 postReservationR :: Handler ReserveRoute
 postReservationR = authorizedSession $ \rr body session -> do
@@ -44,8 +45,8 @@ postReservationR = authorizedSession $ \rr body session -> do
     Just ires' -> do
       let res = inputReservation (timeZoneSeries rr) ires'
       result <- runAuthorizedAction userId (R.createReservation res)
-      return $ Right result
-    Nothing -> return $ Left status400 -- TODO let's replace this with a throw and have the error handler middleware handle it
+      return result
+    Nothing -> throw $ FormatException "Invalid reservation input format"
 
 
 
