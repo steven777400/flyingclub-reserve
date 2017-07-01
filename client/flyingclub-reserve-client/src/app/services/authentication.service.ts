@@ -11,38 +11,38 @@ export class AuthenticationService {
 
   constructor(private http: Http) { }
 
-  public login(username: string, password: string) : Promise<Session> {
+  public async login(username: string, password: string) : Promise<Session> {
 
     const headers = new Headers({"Authorization": "Basic " + btoa(username + ":" + password)});
 
-    return this.http
-    .post(environment.serviceUrl + "/login", {}, {headers: headers})
-    .toPromise()
-    .then(r => {
-      const s: Session = Deserialize(r.json(), Session);      
-      this.session = s;
-      return s;
-    });
+    const r = await this.http
+      .post(`${environment.serviceUrl}/login`, {}, {headers: headers})
+      .toPromise();
+
+    const s: Session = Deserialize(r.json(), Session);      
+    this.session = s;
+    return s;
+  
 
   }
 
-  public activate() : Promise<Session> {
+  public async activate() : Promise<Session> {
 
     const headers = new Headers({"Authorization": "Bearer " + this.session.id});
 
-    return this.http
-    .post(environment.serviceUrl + "/login", {}, {headers: headers})
-    .toPromise()
-    .then(r => {
-      const s: Session = Deserialize(r.json(), Session);      
-      this.session = s;
-      return s;
-    });
+    const r = await this.http
+      .post(`${environment.serviceUrl}/login`, {}, {headers: headers})
+      .toPromise();
+    
+    const s: Session = Deserialize(r.json(), Session);      
+    this.session = s;
+    return s;
+  
 
   }
 
   public getHeaders() : Headers {
-    return new Headers({"Authorization": "Bearer " + this.session.id, "Auth-Key": this.session.sessionAuthKey});
+    return new Headers({"Authorization": `Bearer ${this.session.id}`, "Auth-Key": this.session.sessionAuthKey});
 
   }
 
