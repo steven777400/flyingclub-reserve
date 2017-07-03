@@ -11,12 +11,15 @@ import { AirplaneService } from 'app/services/airplane.service';
 import { ReservationService } from 'app/services/reservation.service';
 
 import { AppComponent } from './app.component';
+import { ReservationCreateupdateComponent } from 'app/components/reservation-createupdate/reservation-createupdate.component';
 
 import 'rxjs/add/operator/toPromise';
 
+
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    ReservationCreateupdateComponent
   ],
   imports: [
     NgbModule.forRoot(),

@@ -26,6 +26,8 @@ class Login {
 export class AppComponent {
   title = 'app';
   model = new Login();
+  showR = false;
+
   
   constructor(private http: Http, 
     private authentication: AuthenticationService,
@@ -42,8 +44,11 @@ export class AppComponent {
       .login(this.model.username, this.model.password);
 
   
+  this.showR = true;
+  /*
     console.log(s);
     const s2 = await this.authentication.activate();
+    
     
     console.log(s2);
     const r2a = await this.airplane.airplanes();
@@ -63,7 +68,7 @@ export class AppComponent {
     console.log(r3); 
 
     
-  
+  */
   
     
   
