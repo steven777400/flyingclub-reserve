@@ -14,7 +14,7 @@ import           Data.Time.LocalTime.TimeZone.Series
 import           Database.Persist.Schema
 import           Database.Persist.Sql
 
-data OutputTarget = SMS | Voice
+data OutputTarget = Web | SMS | Voice
 data Context = Context
   { target    :: OutputTarget
   , zst       :: ZoneSeriesTime

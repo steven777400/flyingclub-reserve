@@ -26,15 +26,14 @@ mkTimeOfDaySlot zst = TimeOfDaySlot
   (formatTime $ localTimeOfDay local)
   where local = zoneSeriesTimeToLocalTime zst
 
-dayRange :: ZoneSeriesTime -> Day -> (UTCTime, UTCTime)
-dayRange zst localDay = (lt2utc midnight, lt2utc (TimeOfDay 23 59 59))
-  where lt2utc tod = localTimeToUTC' (zoneSeriesTimeSeries zst) (LocalTime localDay tod)
+dayRange :: TimeZoneSeries -> Day -> (UTCTime, UTCTime)
+dayRange tzs localDay = (lt2utc midnight, lt2utc (TimeOfDay 23 59 59))
+  where lt2utc tod = localTimeToUTC' tzs (LocalTime localDay tod)
 
-enumerateLocalHours :: ZoneSeriesTime -> Day -> [TimeOfDaySlot]
-enumerateLocalHours zst localDay = [mkTimeOfDaySlot (ZoneSeriesTime hour tzs) | hour <- range]
+enumerateLocalHours :: TimeZoneSeries -> Day -> [TimeOfDaySlot]
+enumerateLocalHours tzs localDay = [mkTimeOfDaySlot (ZoneSeriesTime hour tzs) | hour <- range]
   where
-    tzs = zoneSeriesTimeSeries zst
-    (begin, end) = dayRange zst localDay
+    (begin, end) = dayRange tzs localDay
     range = takeWhile ((>) end) $ iterate (addUTCTime (60*60)) begin
       -- [begin, addUTCTime (60*60) begin..end] no instance for Enum UTCTime
       -- could convert to seconds, enum, then back via POSIX module...

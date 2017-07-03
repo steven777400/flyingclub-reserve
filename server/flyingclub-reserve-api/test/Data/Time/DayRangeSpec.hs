@@ -36,24 +36,24 @@ spec = do
         it "handles PST day" $ do
           zst <- getzst
           -- 8 hour difference during standard time
-          dayRange zst originDay `shouldBe` (UTCTime originDay (8*60*60), UTCTime (addDays 1 originDay) (8*60*60 - 1))
+          dayRange (zoneSeriesTimeSeries zst) originDay `shouldBe` (UTCTime originDay (8*60*60), UTCTime (addDays 1 originDay) (8*60*60 - 1))
         it "handles PDT day" $ do
           zst <- getzst
           -- 7 hour difference during saving time
-          dayRange zst summerDay `shouldBe` (UTCTime summerDay (7*60*60), UTCTime (addDays 1 summerDay) (7*60*60 - 1))
+          dayRange (zoneSeriesTimeSeries zst) summerDay `shouldBe` (UTCTime summerDay (7*60*60), UTCTime (addDays 1 summerDay) (7*60*60 - 1))
         it "handles PST -> PDT day" $ do
           zst <- getzst
           -- 8 -> 7 hour difference during spring forward
-          dayRange zst pstToPdtDay `shouldBe` (UTCTime pstToPdtDay (8*60*60), UTCTime (addDays 1 pstToPdtDay) (7*60*60 - 1))
+          dayRange (zoneSeriesTimeSeries zst) pstToPdtDay `shouldBe` (UTCTime pstToPdtDay (8*60*60), UTCTime (addDays 1 pstToPdtDay) (7*60*60 - 1))
         it "handles PDT -> PST day" $ do
           zst <- getzst
           -- 7 -> 8 hour difference during fall back
-          dayRange zst pdtToPstDay `shouldBe` (UTCTime pdtToPstDay (7*60*60), UTCTime (addDays 1 pdtToPstDay) (8*60*60 - 1))
+          dayRange (zoneSeriesTimeSeries zst) pdtToPstDay `shouldBe` (UTCTime pdtToPstDay (7*60*60), UTCTime (addDays 1 pdtToPstDay) (8*60*60 - 1))
     describe "enumerateLocalHours" $ do
         it "handles PST day" $ do
           zst <- getzst
           -- 8 hour difference during standard time
-          let x = enumerateLocalHours zst originDay
+          let x = enumerateLocalHours (zoneSeriesTimeSeries zst) originDay
           slotUtc (head x) `shouldBe` UTCTime originDay (8*60*60)
           slotUtc (last x) `shouldBe` UTCTime (addDays 1 originDay) (7*60*60)
           slotLocal (head x) `shouldBe` LocalTime originDay midnight
@@ -65,7 +65,7 @@ spec = do
         it "handles PDT day" $ do
           zst <- getzst
           -- 7 hour difference during saving time
-          let x = enumerateLocalHours zst summerDay
+          let x = enumerateLocalHours (zoneSeriesTimeSeries zst) summerDay
           slotUtc (head x) `shouldBe` UTCTime summerDay (7*60*60)
           slotUtc (last x) `shouldBe` UTCTime (addDays 1 summerDay) (6*60*60)
           slotLocal (head x) `shouldBe` LocalTime summerDay midnight
@@ -76,7 +76,7 @@ spec = do
         it "handles PST -> PDT day" $ do
           zst <- getzst
           -- 8 -> 7 hour difference during spring forward
-          let x = enumerateLocalHours zst pstToPdtDay
+          let x = enumerateLocalHours (zoneSeriesTimeSeries zst) pstToPdtDay
           slotUtc (head x) `shouldBe` UTCTime pstToPdtDay (8*60*60)
           slotUtc (last x) `shouldBe` UTCTime (addDays 1 pstToPdtDay) (6*60*60)
           slotLocal (head x) `shouldBe` LocalTime pstToPdtDay midnight
@@ -87,7 +87,7 @@ spec = do
         it "handles PDT -> PST day" $ do
           zst <- getzst
           -- 7 -> 8 hour difference during fall back
-          let x = enumerateLocalHours zst pdtToPstDay
+          let x = enumerateLocalHours (zoneSeriesTimeSeries zst) pdtToPstDay
           slotUtc (head x) `shouldBe` UTCTime pdtToPstDay (7*60*60)
           slotUtc (last x) `shouldBe` UTCTime (addDays 1 pdtToPstDay) (7*60*60)
           slotLocal (head x) `shouldBe` LocalTime pdtToPstDay midnight

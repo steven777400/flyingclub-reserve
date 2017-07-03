@@ -29,7 +29,7 @@ singlePlane userId tailn f = do
 check :: ZoneSeriesTime -> Key User -> TailNumber -> Day -> SqlM ParsedActionResult
 check zst userId tailn day = do
   singlePlane userId tailn (\p -> do
-      let (begin, end) = dayRange zst day
+      let (begin, end) = dayRange (zoneSeriesTimeSeries zst) day
       let utcnow = zoneSeriesTimeToUTC zst
       when (end < utcnow) $ throw (FormatException "Can't check past dates")
       res <- runAuthorizedAction userId (getReservations begin end)
@@ -45,7 +45,7 @@ check zst userId tailn day = do
 
 review :: ZoneSeriesTime -> Key User -> Day -> SqlM ParsedActionResult
 review zst userId day = do
-  let (begin, end) = dayRange zst day
+  let (begin, end) = dayRange (zoneSeriesTimeSeries zst) day
   let utcnow = zoneSeriesTimeToUTC zst
   when (end < utcnow) $ throw (FormatException "Can't review past dates")
   res <- runAuthorizedAction userId (getReservations begin end)

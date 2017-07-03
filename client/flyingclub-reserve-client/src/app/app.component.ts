@@ -54,7 +54,7 @@ export class AppComponent {
     o.reservationComment = "comment";
     o.reservationMaintenance = false;
     o.reservationUserId = s.sessionUserId;
-    o.reservationStart = moment.utc([2017, 7, 14, 15, 25, 50]);
+    o.reservationStart = moment([2017, 7, 14, 15, 25, 50]);
     o.reservationEnd = moment([2017, 8, 14, 15, 25, 50]);
     console.log(o);
     console.log(Serialize(o));
