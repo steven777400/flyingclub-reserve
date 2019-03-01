@@ -1,22 +1,3 @@
-dist
-dist-*
-cabal-dev
-*.o
-*.hi
-*.chi
-*.chs.h
-.cabal-sandbox/
-cabal.sandbox.config
-*.prof
-*.aux
-*.hp
-.stack-work/
-cabal.project.local
-report.html
-test*.sqlite
-test*.sqlite-shm
-test*.sqlite-wal
-
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
