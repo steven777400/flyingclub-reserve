@@ -70,7 +70,7 @@ runInDb sql = runInMemory $ do
     insertKey ia2 a2
     insertKey ia3 a3
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
-    let rkr = S.Reservation i2 ia1 (UTCTime (fromGregorian 2016 02 27) (8*60*60)) (UTCTime (fromGregorian 2016 02 27) (10*60*60)) Nothing False ""
+    let rkr = S.Reservation i2 ia1 (UTCTime (fromGregorian 2016 02 27) (8*60*60)) (UTCTime (fromGregorian 2016 02 27) (10*60*60)) False "" Nothing
     insertKey rk rkr
     let rk1 = rk
 
@@ -79,7 +79,7 @@ runInDb sql = runInMemory $ do
       i1 ia1
       (UTCTime (fromGregorian 2016 02 27) (12*60*60))
       (UTCTime (fromGregorian 2016 02 27) (15*60*60))
-      Nothing False ""
+      False "" Nothing 
     let ork = rk
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
@@ -87,27 +87,28 @@ runInDb sql = runInMemory $ do
       i2 ia1
       (UTCTime (fromGregorian 2016 02 27) (15*60*60))
       (UTCTime (fromGregorian 2016 02 27) (20*60*60))
-      Nothing False ""
+      False "" Nothing 
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
       i1 ia1
       (UTCTime (fromGregorian 2016 02 27) (9*60*60))
       (UTCTime (fromGregorian 2016 02 27) (15*60*60))
-      (Just $ UTCTime (fromGregorian 2016 02 27) (15*60*60)) False "" -- deleted
+      False ""
+      (Just $ UTCTime (fromGregorian 2016 02 27) (15*60*60)) -- deleted
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
       i1 ia2
       (UTCTime (fromGregorian 2016 02 27) (9*60*60))
       (UTCTime (fromGregorian 2016 02 27) (11*60*60))
-      Nothing False ""
+      False "" Nothing 
     sql (SampleData i1 i2 i4 i3 ia1 ia2 ia3 rk1 ork)
 
-sampleOfficerUser = S.User "testof" "testol" Officer Nothing
-samplePilotUser = S.User "testpf" "testpl" Pilot Nothing
-sampleSocialUser = S.User "test1f" "test1l" Social Nothing
-sampleNAUser = S.User "test1f" "test1l" NoAccess Nothing
+sampleOfficerUser = S.User "testof" "testol" Officer (fromGregorian 1990 1 1) Nothing
+samplePilotUser = S.User "testpf" "testpl" Pilot (fromGregorian 1990 1 1) Nothing
+sampleSocialUser = S.User "test1f" "test1l" Social (fromGregorian 1990 1 1) Nothing
+sampleNAUser = S.User "test1f" "test1l" NoAccess (fromGregorian 1990 1 1) Nothing
 
 a1 = S.Airplane "54073" "cessna 172" Nothing
 a2 = S.Airplane "52349" "cessna 182" Nothing

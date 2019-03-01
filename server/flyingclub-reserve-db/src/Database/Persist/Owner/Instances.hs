@@ -22,3 +22,7 @@ instance Owner Phone where
 instance Owner Reservation where
     owner = reservationUserId
     ownerField = ReservationUserId
+
+instance Owner Currency where
+    owner = currencyUserId
+    ownerField = CurrencyUserId

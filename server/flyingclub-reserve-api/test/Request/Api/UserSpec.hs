@@ -4,6 +4,7 @@ module Request.Api.UserSpec where
 import           Control.Exception.Unauthorized
 import           Control.Monad.Trans
 import           Data.Aeson
+import           Data.Time.Calendar
 import           Data.Time.Clock
 import qualified Database.Persist.Audit.Operations   as A
 import           Database.Persist.Environment.Sqlite (runInMemory)
@@ -27,10 +28,10 @@ runInDb sql = runInMemory $ do
     S.runAdjustedMigration
     sql
 
-sampleOfficerUser = S.User "test1f" "test1l" Officer Nothing
-samplePilotUser = S.User "test1f" "test1l" Pilot Nothing
-sampleSocialUser = S.User "test1f" "test1l" Social Nothing
-sampleNAUser = S.User "test1f" "test1l" NoAccess Nothing
+sampleOfficerUser = S.User "test1f" "test1l" Officer (fromGregorian 1990 1 1) Nothing
+samplePilotUser = S.User "test1f" "test1l" Pilot (fromGregorian 1990 1 1) Nothing
+sampleSocialUser = S.User "test1f" "test1l" Social (fromGregorian 1990 1 1) Nothing
+sampleNAUser = S.User "test1f" "test1l" NoAccess (fromGregorian 1990 1 1) Nothing
 
 sampleAllowAddr userId = S.Address userId "allow test" "" "" "" True Nothing
 sampleDisallowAddr userId = S.Address userId "disallow test" "" "" "" False Nothing

@@ -4,6 +4,7 @@ module Database.Persist.SessionSpec where
 import           Control.Monad.Trans
 import           Data.Aeson
 import           Data.Maybe
+import           Data.Time.Calendar
 import           Data.Time.Clock
 import           Database.Persist.Environment.Sqlite (runInMemory)
 import           Database.Persist.Schema
@@ -22,9 +23,9 @@ runInDb sql = runInMemory $ do
     runAdjustedMigration
     sql
 
-sampleUser1 = User "test1f" "test1l" Officer Nothing
-sampleUser2 = User "test2f" "test2l" Social Nothing
-sampleUser3 = User "test3f" "test3l" NoAccess Nothing
+sampleUser1 = User "test1f" "test1l" Officer (fromGregorian 1990 1 1) Nothing
+sampleUser2 = User "test2f" "test2l" Social (fromGregorian 1990 1 1) Nothing
+sampleUser3 = User "test3f" "test3l" NoAccess (fromGregorian 1990 1 1) Nothing
 
 prepDb = do
     i1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
@@ -175,6 +176,8 @@ spec = do
             liftIO $ isNothing s3a `shouldBe` True
         it "refuses deleted users" $ runInDb $ do
             (i1, i2, i3) <- prepDb
-            delete i1
+            -- delete i1, we don't delete, we mark deleted
+            now <- liftIO getCurrentTime
+            update i1 [UserDeleted =. Just now]
             s1a <- S.login "steve@kolls.net" "1234"
             liftIO $ isNothing s1a `shouldBe` True

@@ -48,10 +48,10 @@ inputReservation tzs ir@InputReservation{..} = Reservation
   reservationUserId
   reservationAirplaneId
   (localTimeToUTC' tzs reservationStart)
-  (localTimeToUTC' tzs reservationEnd)
-  Nothing
+  (localTimeToUTC' tzs reservationEnd)  
   reservationMaintenance
   reservationComment
+  Nothing
 
 postReservationR :: Handler ReserveRoute
 postReservationR = authorizedSession $ \rr body session -> do

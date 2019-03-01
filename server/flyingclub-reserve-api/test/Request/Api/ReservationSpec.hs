@@ -58,7 +58,7 @@ runInDb sql = runInMemory $ do
     insertKey ia2 a2
     insertKey ia3 a3
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
-    let rkr = S.Reservation i2 ia1 (UTCTime (fromGregorian 2027 01 20) (8*60*60)) (UTCTime (fromGregorian 2027 01 20) (10*60*60)) Nothing False ""
+    let rkr = S.Reservation i2 ia1 (UTCTime (fromGregorian 2027 01 20) (8*60*60)) (UTCTime (fromGregorian 2027 01 20) (10*60*60)) False "" Nothing 
     insertKey rk rkr
     let rk1 = rk
 
@@ -67,7 +67,7 @@ runInDb sql = runInMemory $ do
       i1 ia1
       (UTCTime (fromGregorian 2027 01 20) (12*60*60))
       (UTCTime (fromGregorian 2027 01 20) (15*60*60))
-      Nothing False ""
+      False "" Nothing 
     let ork = rk
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
@@ -75,27 +75,27 @@ runInDb sql = runInMemory $ do
       i2 ia1
       (UTCTime (fromGregorian 2027 01 20) (15*60*60))
       (UTCTime (fromGregorian 2027 01 20) (16*60*60))
-      Nothing False ""
+      False "" Nothing 
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
       i1 ia1
       (UTCTime (fromGregorian 2027 01 20) (9*60*60))
       (UTCTime (fromGregorian 2027 01 20) (15*60*60))
-      (Just $ UTCTime (fromGregorian 2027 01 20) (15*60*60)) False "" -- deleted
+      False "" (Just $ UTCTime (fromGregorian 2027 01 20) (15*60*60))  -- deleted
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
       i1 ia2
       (UTCTime (fromGregorian 2027 01 20) (9*60*60))
       (UTCTime (fromGregorian 2027 01 20) (11*60*60))
-      Nothing False ""
+      False "" Nothing 
     sql (SampleData i1 i2 i3 ia1 ia2 ia3 rk1 ork)
 
-sampleOfficerUser = S.User "test1f" "test1l" Officer Nothing
-samplePilotUser = S.User "test1f" "test1l" Pilot Nothing
-sampleSocialUser = S.User "test1f" "test1l" Social Nothing
-sampleNAUser = S.User "test1f" "test1l" NoAccess Nothing
+sampleOfficerUser = S.User "test1f" "test1l" Officer (fromGregorian 1990 1 1) Nothing
+samplePilotUser = S.User "test1f" "test1l" Pilot (fromGregorian 1990 1 1) Nothing
+sampleSocialUser = S.User "test1f" "test1l" Social (fromGregorian 1990 1 1) Nothing
+sampleNAUser = S.User "test1f" "test1l" NoAccess (fromGregorian 1990 1 1) Nothing
 
 a1 = S.Airplane "54073" "cessna 172" Nothing
 a2 = S.Airplane "52349" "cessna 182" Nothing
@@ -152,21 +152,21 @@ spec = do
             (pilotUser sd) (n073 sd)
             (UTCTime (fromGregorian 2016 01 20) (8*60*60))
             (UTCTime (fromGregorian 2016 01 20) (10*60*60))
-            Nothing False ""
+            False "" Nothing 
             -- a deleted one in the future
           rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
           insertKey rk $ S.Reservation
             (pilotUser sd) (n073 sd)
             (UTCTime (fromGregorian 2018 01 20) (8*60*60))
             (UTCTime (fromGregorian 2018 01 20) (10*60*60))
-            (Just $ UTCTime (fromGregorian 2018 01 20) 0) False ""
+            False "" (Just $ UTCTime (fromGregorian 2018 01 20) 0) 
             -- one for someone else
           rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
           insertKey rk $ S.Reservation
             (officerUser sd) (n073 sd)
             (UTCTime (fromGregorian 2019 01 20) (8*60*60))
             (UTCTime (fromGregorian 2019 01 20) (10*60*60))
-            Nothing False ""
+            False "" Nothing 
           r <- runAuthorizedAction (pilotUser sd) (
             getReservationsUser (pilotUser sd))
           liftIO $ length r `shouldBe` length orig
@@ -230,7 +230,7 @@ spec = do
                 (pilotUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (8*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (10*60*60))
-                Nothing False "")
+                False "" Nothing )
 
             -- confirm insert
             r <- runAuthorizedAction (pilotUser sd) (
@@ -247,7 +247,7 @@ spec = do
                 (officerUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (10*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (12*60*60))
-                Nothing False "")
+                False "" Nothing )
 
             -- confirm insert
             r <- runAuthorizedAction (pilotUser sd) (
@@ -265,7 +265,7 @@ spec = do
                 (pilotUser sd) (n349 sd)
                 (UTCTime (fromGregorian 2027 01 21) (10*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (12*60*60))
-                Nothing False "")
+                False "" Nothing )
 
             -- confirm insert
             r <- runAuthorizedAction (pilotUser sd) (
@@ -283,14 +283,14 @@ spec = do
               (pilotUser sd) (n073 sd)
               (UTCTime (fromGregorian 2027 01 21) (8*60*60))
               (UTCTime (fromGregorian 2027 01 21) (10*60*60))
-              Nothing False "")
+              False "" Nothing )
           -- do insert
           ex <- (try (runAuthorizedAction (officerUser sd) (
             createReservation $ S.Reservation
               (officerUser sd) (n073 sd)
               (UTCTime (fromGregorian 2027 01 21) (9*60*60))
               (UTCTime (fromGregorian 2027 01 21) (11*60*60))
-              Nothing False ""))) :: S.SqlM (Either ConflictException (Key S.Reservation))
+              False "" Nothing ))) :: S.SqlM (Either ConflictException (Key S.Reservation))
           liftIO $ isLeft ex `shouldBe` True
           -- confirm NO insert
           r <- runAuthorizedAction (pilotUser sd) (
@@ -305,14 +305,14 @@ spec = do
                 (pilotUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (8*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (10*60*60))
-                Nothing False "")
+                False "" Nothing )
             -- do insert
             runAuthorizedAction (officerUser sd) (
               createReservation $ S.Reservation
                 (officerUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (9*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (11*60*60))
-                Nothing False "")
+                False "" Nothing )
               ) `shouldThrow` anyConflictException
         it "pilot reserves for self only" $ runInDb $ \sd -> do
             r <- runAuthorizedAction (pilotUser sd) (
@@ -327,7 +327,7 @@ spec = do
                 (pilotUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (8*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (10*60*60))
-                Nothing False "")
+                False "" Nothing )
             -- confirm insert
             r <- runAuthorizedAction (pilotUser sd) (
               getReservations
@@ -341,7 +341,7 @@ spec = do
                 (officerUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (14*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (16*60*60))
-                Nothing False ""))) :: S.SqlM (Either UnauthorizedException (Key S.Reservation))
+                False "" Nothing ))) :: S.SqlM (Either UnauthorizedException (Key S.Reservation))
             liftIO $ isLeft ex `shouldBe` True
             -- confirm NO insert
             r <- runAuthorizedAction (pilotUser sd) (
@@ -357,7 +357,7 @@ spec = do
               (naUser sd) (n073 sd)
               (UTCTime (fromGregorian 2027 01 19) (8*60*60))
               (UTCTime (fromGregorian 2027 01 19) (10*60*60))
-              Nothing False "")
+              False "" Nothing )
             ) `shouldThrow` anyUnauthorizedException
 
         it "throws for past start" $ (runInDb $ \sd -> do
@@ -365,35 +365,35 @@ spec = do
               (officerUser sd) (n073 sd)
               (UTCTime (fromGregorian 2016 01 19) (8*60*60))
               (UTCTime (fromGregorian 2026 01 19) (10*60*60))
-              Nothing False "")
+              False "" Nothing )
             ) `shouldThrow` anyConflictException
         it "throws for end before start" $ (runInDb $ \sd -> do
             runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
               (officerUser sd) (n073 sd)
               (UTCTime (fromGregorian 2027 01 19) (8*60*60))
               (UTCTime (fromGregorian 2026 01 19) (10*60*60))
-              Nothing False "")
+              False "" Nothing )
             ) `shouldThrow` anyConflictException
         it "throws for deleted airplane" $ (runInDb $ \sd -> do
             runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
               (officerUser sd) (n666 sd)
               (UTCTime (fromGregorian 2027 01 19) (8*60*60))
               (UTCTime (fromGregorian 2027 01 19) (10*60*60))
-              Nothing False "")
+              False "" Nothing )
             ) `shouldThrow` anyException
         it "disallows pilot to make maint res" $ (runInDb $ \sd -> do
             runAuthorizedAction (pilotUser sd) (createReservation $ S.Reservation
               (pilotUser sd) (n073 sd)
               (UTCTime (fromGregorian 2027 01 19) (8*60*60))
               (UTCTime (fromGregorian 2027 01 19) (10*60*60))
-              Nothing True "")
+              True "" Nothing )
             ) `shouldThrow` anyConflictException
         it "allows officer to make maint res" $ runInDb $ \sd -> do
             runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
               (officerUser sd) (n073 sd)
               (UTCTime (fromGregorian 2027 01 19) (8*60*60))
               (UTCTime (fromGregorian 2027 01 19) (10*60*60))
-              Nothing True "")
+              True "" Nothing )
             r <- runAuthorizedAction (pilotUser sd) (
               getReservations
                 (UTCTime (fromGregorian 2027 01 19) (7*60*60))
@@ -405,12 +405,12 @@ spec = do
                 (pilotUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 19) (9*60*60))
                 (UTCTime (fromGregorian 2027 01 19) (11*60*60))
-                Nothing False "")
+                False "" Nothing )
             runAuthorizedAction (officerUser sd) (createReservation $ S.Reservation
               (officerUser sd) (n073 sd)
               (UTCTime (fromGregorian 2027 01 19) (8*60*60))
               (UTCTime (fromGregorian 2027 01 19) (10*60*60))
-              Nothing True "")
+              True "" Nothing )
 
             r <- runAuthorizedAction (pilotUser sd) (
               getReservations
@@ -453,7 +453,7 @@ spec = do
               (pilotUser sd) (n073 sd)
               (UTCTime (fromGregorian 2027 01 21) (8*60*60))
               (UTCTime (fromGregorian 2027 01 21) (10*60*60))
-              Nothing False "")
+              False "" Nothing )
           -- do update
           ex <- (try (runAuthorizedAction (officerUser sd) (
             updateReservation (pilotRes sd)
@@ -474,7 +474,7 @@ spec = do
                 (pilotUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (8*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (10*60*60))
-                Nothing False "")
+                False "" Nothing )
             -- do update
             runAuthorizedAction (officerUser sd) (
               updateReservation (pilotRes sd)
@@ -489,13 +489,13 @@ spec = do
                 (officerUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (8*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (10*60*60))
-                Nothing True "")
+                True "" Nothing )
             runAuthorizedAction (pilotUser sd) (
               createReservation $ S.Reservation
                 (pilotUser sd) (n073 sd)
                 (UTCTime (fromGregorian 2027 01 21) (10*60*60))
                 (UTCTime (fromGregorian 2027 01 21) (12*60*60))
-                Nothing False "")
+                False "" Nothing )
             r <- runAuthorizedAction (pilotUser sd) (
               getReservations
                 (UTCTime (fromGregorian 2027 01 21) (7*60*60))
@@ -643,7 +643,7 @@ spec = do
               (pilotUser sd) (n073 sd)
               (UTCTime (fromGregorian 2016 01 20) (8*60*60))
               (UTCTime (fromGregorian 2016 01 20) (10*60*60))
-              Nothing False ""
+              False "" Nothing 
             runAuthorizedAction (officerUser sd) (deleteReservation
               rk
               )
@@ -654,7 +654,7 @@ spec = do
               (pilotUser sd) (n073 sd)
               (UTCTime (fromGregorian 2016 01 20) (8*60*60))
               (UTCTime (fromGregorian 2027 01 20) (10*60*60))
-              Nothing False ""
+              False "" Nothing 
             fullyDeleted <- runAuthorizedAction (officerUser sd) (deleteReservation
               rk
               )

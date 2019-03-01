@@ -14,6 +14,7 @@ import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Resource
 import           Data.Aeson
 import qualified Data.Text                          as T
+import           Data.Time.Calendar
 import           Data.Time.Clock
 import qualified Database.Persist.Audit.Class       as A
 import           Database.Persist.Sql
@@ -32,6 +33,7 @@ User
     firstname   T.Text
     lastname    T.Text
     permission  UserType
+    signedRulesOfOp Day
     deleted     UTCTime Maybe
     deriving Show Generic
 Address
@@ -79,10 +81,21 @@ Reservation
     userId      UserId
     airplaneId  AirplaneId
     start       UTCTime
-    end         UTCTime
-    deleted     UTCTime Maybe
+    end         UTCTime    
     maintenance Bool
     comment     T.Text
+    deleted     UTCTime Maybe
+    deriving Show Generic
+Currency
+    Id          UUID
+    userId      UserId
+    name        T.Text -- if a user has multiple family members, this could just be a descriptive field
+    flightReview    Day Maybe
+    medical         Day Maybe
+    overrideMedicalLength   Int Maybe
+    dateOfBirth     Day    
+    comment     T.Text -- for officers only
+    deleted     UTCTime Maybe
     deriving Show Generic
 Notification
     Id          UUID
@@ -181,5 +194,13 @@ instance A.Audit Reservation where
     deleteField = ReservationDeleted
     deleted = reservationDeleted
 
+instance ToJSON Currency where
+instance FromJSON Currency where
+instance A.Audit Currency where
+    toKey = CurrencyKey
+    fromKey = unCurrencyKey
+    deleteField = CurrencyDeleted
+    deleted = currencyDeleted
+        
 instance ToJSON Session where
 instance FromJSON Session where

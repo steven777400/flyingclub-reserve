@@ -36,8 +36,8 @@ import qualified Database.Persist.Schema                  as S
 import           Web.Application
 
 
-sampleUser1 = User "test1f" "test1l" Officer Nothing
-sampleUser2 = User "test2f" "test2l" Social Nothing
+sampleUser1 = User "test1f" "test1l" Officer (fromGregorian 1990 1 1) Nothing
+sampleUser2 = User "test2f" "test2l" Social (fromGregorian 1990 1 1) Nothing
 
 prepAuth = do
     i1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
@@ -72,7 +72,7 @@ prepDb = do
     insertKey ia2 a2
     insertKey ia3 a3
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
-    let rkr = S.Reservation i2 ia1 (UTCTime (fromGregorian 2027 01 20) (8*60*60)) (UTCTime (fromGregorian 2027 01 20) (10*60*60)) Nothing False ""
+    let rkr = S.Reservation i2 ia1 (UTCTime (fromGregorian 2027 01 20) (8*60*60)) (UTCTime (fromGregorian 2027 01 20) (10*60*60)) False "" Nothing
     insertKey rk rkr
     let rk1 = rk
 
@@ -81,14 +81,14 @@ prepDb = do
       i1 ia1
       (UTCTime (fromGregorian 2007 01 20) (12*60*60))
       (UTCTime (fromGregorian 2007 01 20) (15*60*60))
-      Nothing False ""
+      False "" Nothing
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
       i1 ia1
       (UTCTime (fromGregorian 2027 01 20) (12*60*60))
       (UTCTime (fromGregorian 2027 01 20) (15*60*60))
-      Nothing False ""
+      False "" Nothing
     let ork = rk
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
@@ -96,7 +96,7 @@ prepDb = do
       i2 ia1
       (UTCTime (fromGregorian 2027 01 20) (15*60*60))
       (UTCTime (fromGregorian 2027 01 20) (16*60*60))
-      Nothing False ""
+      False "" Nothing
 
     -- for day testing, let's make one on utc day but not calendar day!
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
@@ -104,27 +104,27 @@ prepDb = do
       i2 ia1
       (UTCTime (fromGregorian 2027 01 20) (1*60*60))
       (UTCTime (fromGregorian 2027 01 20) (2*60*60))
-      Nothing False ""
+      False "" Nothing
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
       i1 ia1
       (UTCTime (fromGregorian 2027 01 20) (9*60*60))
       (UTCTime (fromGregorian 2027 01 20) (15*60*60))
-      (Just $ UTCTime (fromGregorian 2027 01 20) (15*60*60)) False "" -- deleted
+      False "" (Just $ UTCTime (fromGregorian 2027 01 20) (15*60*60))  -- deleted
 
     rk <- liftIO $ S.ReservationKey <$> (randomIO :: IO UUID)
     insertKey rk $ S.Reservation
       i1 ia2
       (UTCTime (fromGregorian 2027 01 20) (9*60*60))
       (UTCTime (fromGregorian 2027 01 20) (11*60*60))
-      Nothing False ""
+      False "" Nothing
 
 
-sampleOfficerUser = S.User "test1f" "test1l" Officer Nothing
-samplePilotUser = S.User "test1f" "test1l" Pilot Nothing
-sampleSocialUser = S.User "test1f" "test1l" Social Nothing
-sampleNAUser = S.User "test1f" "test1l" NoAccess Nothing
+sampleOfficerUser = S.User "test1f" "test1l" Officer  (fromGregorian 1990 1 1) Nothing
+samplePilotUser = S.User "test1f" "test1l" Pilot  (fromGregorian 1990 1 1) Nothing
+sampleSocialUser = S.User "test1f" "test1l" Social  (fromGregorian 1990 1 1) Nothing
+sampleNAUser = S.User "test1f" "test1l" NoAccess  (fromGregorian 1990 1 1) Nothing
 
 a1 = S.Airplane "54073" "cessna 172" Nothing
 a2 = S.Airplane "52349" "cessna 182" Nothing

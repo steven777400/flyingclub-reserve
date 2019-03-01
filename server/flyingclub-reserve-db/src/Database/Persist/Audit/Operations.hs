@@ -1,6 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 module Database.Persist.Audit.Operations (isDeleted, notDeleted,
-  insert, delete, update, getOrNotFound, getNotDeletedOrNotFound, filterE) where
+  insert, delete, update, getOrNotFound, getNotDeletedOrNotFound, 
+  filterE, mapE) where
 
 import           Control.Exception.StackError
 import           Control.Monad.Trans
@@ -76,3 +77,6 @@ getNotDeletedOrNotFound objId = do
 
 filterE :: (a -> Bool) -> [Entity a] -> [Entity a]
 filterE f = filter (\(Entity _ v) -> f v)
+
+mapE :: (a -> a) -> [Entity a] -> [Entity a]
+mapE f = map (\(Entity k v) -> Entity k (f v))

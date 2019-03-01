@@ -61,7 +61,7 @@ review zst userId day = do
 reserve :: Key User -> TailNumber -> UTCTime -> UTCTime -> SqlM ParsedActionResult
 reserve userId tailn begin end = do
   singlePlane userId tailn (\p -> do
-      let res = Reservation userId (entityKey p) begin end Nothing False empty
+      let res = Reservation userId (entityKey p) begin end False empty Nothing
       resid <- runAuthorizedAction userId (createReservation res)
 
       return $ ReserveResult (Entity resid res)

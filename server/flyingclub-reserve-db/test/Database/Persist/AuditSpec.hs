@@ -3,6 +3,7 @@ module Database.Persist.AuditSpec where
 
 import           Control.Monad.Trans
 import           Data.Aeson
+import           Data.Time.Calendar
 import           Data.Time.Clock
 import           Database.Persist.Environment.Sqlite (runInMemory)
 import           Database.Persist.Schema
@@ -19,7 +20,7 @@ runInDb sql = runInMemory $ do
     runAdjustedMigration
     sql
 
-sampleUser = User "test1f" "test1l" Officer Nothing
+sampleUser = User "test1f" "test1l" Officer (fromGregorian 1990 1 1) Nothing
 
 spec :: Spec
 spec = do
@@ -35,8 +36,8 @@ spec = do
             airplanes <- selectList [] [Asc AirplaneId]
             liftIO $ length airplanes `shouldBe` 1
             t <- liftIO getCurrentTime
-            A.insert i1 $ Reservation i1 ak t t Nothing False "test"
-            let rv2data = Reservation i2 ak t t Nothing False "test"
+            A.insert i1 $ Reservation i1 ak t t False "test" Nothing
+            let rv2data = Reservation i2 ak t t False "test" Nothing
             rv <- A.insert i2 $ rv2data
             audit <- selectList [] [Asc AuditId]
             liftIO $ length audit `shouldBe` 3
@@ -58,9 +59,9 @@ spec = do
             insertKey i3 sampleUser
             ak <- A.insert i1 $ Airplane "N54073" "Goat!" Nothing
             t <- liftIO getCurrentTime
-            r1 <- A.insert i1 $ Reservation i1 ak t t Nothing False ""
-            r2 <- A.insert i2 $ Reservation i2 ak t t Nothing False ""
-            let r3data = Reservation i2 ak t t Nothing False ""
+            r1 <- A.insert i1 $ Reservation i1 ak t t False "" Nothing
+            r2 <- A.insert i2 $ Reservation i2 ak t t False "" Nothing
+            let r3data = Reservation i2 ak t t False "" Nothing
             r3 <- A.insert i2 $ r3data
             ndres1 <- selectList [ReservationDeleted ==. Nothing] []
             liftIO $ length ndres1 `shouldBe` 3
@@ -83,7 +84,7 @@ spec = do
             insertKey i1 sampleUser
             ak <- A.insert i1 $ Airplane "N54073" "Goat!" Nothing
             t <- liftIO getCurrentTime
-            r1 <- A.insert i1 $ Reservation i1 ak t t Nothing False ""
+            r1 <- A.insert i1 $ Reservation i1 ak t t False "" Nothing
             A.delete i1 r1
             A.delete i1 r1
             ) `shouldThrow` anyException -- can't delete again
@@ -104,9 +105,9 @@ spec = do
             ak2 <- A.insert i1 $ Airplane "N75898" "Goat!" Nothing
             t <- liftIO getCurrentTime
             let t' = addUTCTime (10000) t
-            let r1data = Reservation i1 ak2 t t Nothing False ""
+            let r1data = Reservation i1 ak2 t t False "" Nothing
             r1 <- A.insert i1 $ r1data
-            let r2data = Reservation i2 ak2 t t' Nothing False ""
+            let r2data = Reservation i2 ak2 t t' False "" Nothing
             r2 <- A.update i2 r1 [ReservationUserId =. i2, ReservationAirplaneId =. ak2, ReservationEnd =. t']
             liftIO $ (toJSON r2data) `shouldBe` (toJSON r2)
             auditi2 <- selectList [AuditUserId ==. i2] [Asc AuditId]

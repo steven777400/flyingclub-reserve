@@ -22,15 +22,6 @@ instance PathPiece UUID where
     fromPathPiece = fromString.unpack
     toPathPiece = pack.toString
 
-instance FromJSON UUID where
-    parseJSON (String x) = case fromText x of
-        (Just uuid) -> return uuid
-        Nothing -> error $ "Unable to parseJSON for UUID " ++ show x
-    parseJSON x = error $ "Unable to parseJSON for UUID (non-string) " ++ show x
-
-instance ToJSON UUID where
-    toJSON = (String).toText
-
 instance PersistField UUID where
     toPersistValue = (PersistText).toText
 

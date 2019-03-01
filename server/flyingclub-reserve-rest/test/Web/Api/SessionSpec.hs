@@ -8,6 +8,7 @@ import           Data.Aeson.Types
 import           Data.ByteString                          (append)
 import           Data.ByteString.Char8                    (pack)
 import           Data.Maybe
+import           Data.Time.Calendar
 import           Database.Persist.Schema
 import           Database.Persist.Sqlite
 import           Database.Persist.Types.PhoneNumber
@@ -30,8 +31,8 @@ import qualified Web.Api.Session                          as S
 import           Web.Application
 
 
-sampleUser1 = User "test1f" "test1l" Officer Nothing
-sampleUser2 = User "test2f" "test2l" Social Nothing
+sampleUser1 = User "test1f" "test1l" Officer  (fromGregorian 1990 1 1) Nothing
+sampleUser2 = User "test2f" "test2l" Social  (fromGregorian 1990 1 1) Nothing
 
 prepDb = do
     i1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
