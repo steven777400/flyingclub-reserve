@@ -28,7 +28,7 @@ authorizedSession :: ToJSON a => (ReserveRoute -> ByteString -> Session -> SqlM 
 authorizedSession f = runHandlerM $ do
     rr@ReserveRoute{..} <- sub
     authHeader <- lookup hAuthorization <$> reqHeaders
-    authKey <- reqHeader "auth-key"
+    authKey <- reqHeader "Auth-Key"
     let sid = authHeader >>= extractSessionToken
     let sauthkey = authKey >>= fromText
     case (sid, sauthkey) of

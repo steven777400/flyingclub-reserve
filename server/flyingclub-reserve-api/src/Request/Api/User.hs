@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 module Request.Api.User (UserDetails(..),
-  getUsers, getUserDetails,
+  getUsers, getUserDetails, getUsersDetails,
   createUser, updateUser, deleteUser,
   createAddress, updateAddress, deleteAddress,
   createEmail, updateEmail, deleteEmail,
@@ -57,6 +57,37 @@ getUserDetails userId =
       phones <- DB.selectList [ownedBy userId, notDeleted] []
       emails <- DB.selectList [ownedBy userId, notDeleted] []
       return $ UserDetails user addrs phones emails
+
+      
+-- note: between getUserDetails and getUsersDetails it is not just singular/plural
+-- there is also the security difference: a user can get their own private details,
+-- but only officers get private details of everyone
+getUsersDetails :: AuthorizedAction [UserDetails]
+getUsersDetails =
+  (authorize Officer $ const getUD) <>  
+  (authorize Social $
+  const $
+  fmap
+    (map (\(UserDetails user addrs phones emails) ->
+       UserDetails
+         user
+         (filterE S.addressShowInDirectory addrs)
+         (filterE S.phoneShowInDirectory phones)
+         (filterE S.emailShowInDirectory emails)))
+    getUD)
+    
+  where
+    getUD = do
+      users <- DB.selectList [notDeleted] []
+      addrs <- DB.selectList [notDeleted] []
+      phones <- DB.selectList [notDeleted] []
+      emails <- DB.selectList [notDeleted] []
+      return $ map (\u@(DB.Entity k _)->UserDetails u 
+        (filterE (\a->S.addressUserId a == k) addrs)
+        (filterE (\a->S.phoneUserId a == k) phones)
+        (filterE (\a->S.emailUserId a == k) emails)
+        ) users
+
 
 createUser :: S.User -> PIN -> AuthorizedAction (DB.Key S.User)
 createUser user pin =

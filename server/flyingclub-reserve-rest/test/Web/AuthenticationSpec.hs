@@ -76,7 +76,7 @@ spec = with app $ do
             let (Just json1) = decode (simpleBody r1) :: Maybe Object
             let (Just sid) = parseMaybe (\o -> o .: "id") json1 :: Maybe String
             let (Just sauth) = parseMaybe (\o -> o .: "sessionAuthKey") json1 :: Maybe String
-            request methodGet "/verifyAuth" [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", pack sauth)] ""
+            request methodGet "/verifyAuth" [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", pack sauth)] ""
               `shouldRespondWith` "\"OK\"" -- It's f--ing JSON so there are extra quotes.  Of course.
         it "403s action if session id and key present for wrong person" $ do
             -- user@example.com 9876
@@ -84,14 +84,14 @@ spec = with app $ do
             let (Just json1) = decode (simpleBody r1) :: Maybe Object
             let (Just sid) = parseMaybe (\o -> o .: "id") json1 :: Maybe String
             let (Just sauth) = parseMaybe (\o -> o .: "sessionAuthKey") json1 :: Maybe String
-            request methodGet "/verifyAuth" [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", pack sauth)] "" `shouldRespondWith` 403
+            request methodGet "/verifyAuth" [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", pack sauth)] "" `shouldRespondWith` 403
         it "401s action if session id present but key wrong" $ do
             -- steve@kolls.net 1234
             r1 <- request methodPost  "/login" [(hAuthorization, "Basic c3RldmVAa29sbHMubmV0OjEyMzQ=")] ""
             let (Just json1) = decode (simpleBody r1) :: Maybe Object
             let (Just sid) = parseMaybe (\o -> o .: "id") json1 :: Maybe String
             sauth <- liftIO $ (randomIO :: IO UUID)
-            request methodGet "/verifyAuth" [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", pack $ show sauth)] "" `shouldRespondWith` 401
+            request methodGet "/verifyAuth" [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", pack $ show sauth)] "" `shouldRespondWith` 401
         it "401s action if session id present but key missing" $ do
             -- steve@kolls.net 1234
             r1 <- request methodPost  "/login" [(hAuthorization, "Basic c3RldmVAa29sbHMubmV0OjEyMzQ=")] ""
@@ -104,13 +104,13 @@ spec = with app $ do
             let (Just json1) = decode (simpleBody r1) :: Maybe Object
             sid <- liftIO $ (randomIO :: IO UUID)
             let (Just sauth) = parseMaybe (\o -> o .: "sessionAuthKey") json1 :: Maybe String
-            request methodGet "/verifyAuth" [(hAuthorization, append "Bearer " (pack $ show sid)), ("auth-key", pack sauth)] "" `shouldRespondWith` 401
+            request methodGet "/verifyAuth" [(hAuthorization, append "Bearer " (pack $ show sid)), ("Auth-Key", pack sauth)] "" `shouldRespondWith` 401
         it "401s action if session id missing" $ do
             -- steve@kolls.net 1234
             r1 <- request methodPost  "/login" [(hAuthorization, "Basic c3RldmVAa29sbHMubmV0OjEyMzQ=")] ""
             let (Just json1) = decode (simpleBody r1) :: Maybe Object
             let (Just sauth) = parseMaybe (\o -> o .: "sessionAuthKey") json1 :: Maybe String
-            request methodGet "/verifyAuth" [("auth-key", pack sauth)] "" `shouldRespondWith` 401
+            request methodGet "/verifyAuth" [("Auth-Key", pack sauth)] "" `shouldRespondWith` 401
         it "401s action if no auth" $ do
             -- steve@kolls.net 1234
             r1 <- request methodPost  "/login" [(hAuthorization, "Basic c3RldmVAa29sbHMubmV0OjEyMzQ=")] ""

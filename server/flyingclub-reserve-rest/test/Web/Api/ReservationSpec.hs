@@ -150,7 +150,7 @@ spec = with app $ do
             let (Just userid1) = parseMaybe (\o -> o .: "sessionUserId") json1 :: Maybe String
             let (Just sauthkey) = parseMaybe (\o -> o .: "sessionAuthKey") json1 :: Maybe String
 
-            r2 <- request methodGet (append "/reservation/user/" (pack userid1)) [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", (pack sauthkey))] ""
+            r2 <- request methodGet (append "/reservation/user/" (pack userid1)) [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", (pack sauthkey))] ""
             let (Just result) = decode (simpleBody r2) :: Maybe Array
             liftIO $ length result `shouldBe` 2 -- two future, non-deleted
 
@@ -163,11 +163,11 @@ spec = with app $ do
             let (Just userid1) = parseMaybe (\o -> o .: "sessionUserId") json1 :: Maybe String
             let (Just sauthkey) = parseMaybe (\o -> o .: "sessionAuthKey") json1 :: Maybe String
 
-            r2 <- request methodGet "/reservation/day/2027-01-20" [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", (pack sauthkey))] ""
+            r2 <- request methodGet "/reservation/day/2027-01-20" [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", (pack sauthkey))] ""
             let (Just result) = decode (simpleBody r2) :: Maybe Array
             liftIO $ length result `shouldBe` 4 -- four on day, not including 1 deleted
 
-            r2 <- request methodGet "/reservation/day/2007-01-20" [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", (pack sauthkey))] ""
+            r2 <- request methodGet "/reservation/day/2007-01-20" [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", (pack sauthkey))] ""
             let (Just result) = decode (simpleBody r2) :: Maybe Array
             liftIO $ length result `shouldBe` 1
 
@@ -180,15 +180,15 @@ spec = with app $ do
             let (Just userid1) = parseMaybe (\o -> o .: "sessionUserId") json1 :: Maybe String
             let (Just sauthkey) = parseMaybe (\o -> o .: "sessionAuthKey") json1 :: Maybe String
 
-            ra1 <- request methodGet "/airplanes"  [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", (pack sauthkey))] ""
+            ra1 <- request methodGet "/airplanes"  [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", (pack sauthkey))] ""
             let (Just resulta1) = decode (simpleBody ra1) :: Maybe [Object]
             let (Just airplaneid1) = parseMaybe (\o -> o .: "id") (head resulta1) :: Maybe String
 
             let postbody = "{\"reservationUserId\": \"" `append` (pack userid1) `append` "\", \"reservationAirplaneId\": \"" `append` (pack airplaneid1) `append`
                             "\", \"reservationStart\": \"2025-01-20T10:00:00\", \"reservationEnd\": \"2025-01-20T12:00:00\", \"reservationMaintenance\": false, \"reservationComment\": \"\"}"
-            (request methodPost "/reservation" [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", (pack sauthkey))] $ fromStrict postbody)
+            (request methodPost "/reservation" [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", (pack sauthkey))] $ fromStrict postbody)
               `shouldRespondWith` 200
 
-            r2 <- request methodGet "/reservation/day/2025-01-20" [(hAuthorization, append "Bearer " (pack sid)), ("auth-key", (pack sauthkey))] ""
+            r2 <- request methodGet "/reservation/day/2025-01-20" [(hAuthorization, append "Bearer " (pack sid)), ("Auth-Key", (pack sauthkey))] ""
             let (Just result) = decode (simpleBody r2) :: Maybe Array
             liftIO $ length result `shouldBe` 1 -- just created!

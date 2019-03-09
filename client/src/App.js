@@ -1,29 +1,102 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import Grid from '@material-ui/core/Grid';
+import { withStyles } from '@material-ui/core/styles';
+
+import MUIDataTable from 'mui-datatables';
+
 import './App.css';
 import LoginForm from './LoginForm.js';
+import Announcement from './components/Announcement.js';
+
+const styles = theme => ({  
+  
+});
+
+const columns = [
+  {name: "userLastname", label: "Last name"},
+  {name: "userFirstname", label: "First name"},
+  {name: "userPermission", label: "Permission"},
+];
+
+const options = {
+  filterType: 'checkbox',
+};
+
 
 class App extends Component {
-  render() {
+  constructor(props) {
+    super(props);
+
+    this.state = { data: null };
+
+    this.lgOnLogin = this.lgOnLogin.bind(this);
+  }
+
+  lgOnLogin(x) {
+    console.log("onLogin");
+    console.log(x);
+
+    fetch('http://localhost:8080/users', {
+      method: "GET",
+      headers: {
+        "Authorization": 'Bearer ' + x.id,
+        "Auth-Key": x.sessionAuthKey
+      }
+    })
+      .catch(_ => {return {ok: false};})      
+      .then(results => {        
+        if (results.ok) {
+          results.json().then(data => {            
+            data = data.map(row => {
+              let r = row.user;
+              r.phones = row.phones;
+              r.emails = row.emails;              
+              return r;
+            });
+            console.log(data);
+            this.setState({data: data})
+          });
+        }
+      });
+  }
+  render() {    
+
     return (
-      <div className="App">
-        <header className="App-header">        
-          <img src={logo} className="App-logo" alt="logo" />          
-          <p>
-            <LoginForm />
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
+      <div>       
+        <CssBaseline /> 
+       
+       <Grid container justify="center">
+        <Grid item xs={10} md={4}>
+          <Grid container>
+          
+            
+            <Grid item xs={12}>
+              <Announcement />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <LoginForm onLogin={this.lgOnLogin} />        
+            </Grid>
+
+        </Grid>
+      </Grid>
+      </Grid>
+
+
+      {this.state.data ?
+      (<MUIDataTable
+        title={"Employee List"}
+        data={this.state.data}
+        columns={columns}
+        options={options}
+      />) : ''}
+
+        
       </div>
     );
   }
 }
 
-export default App;
+
+export default withStyles(styles)(App);

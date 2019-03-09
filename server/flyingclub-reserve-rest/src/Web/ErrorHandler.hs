@@ -17,6 +17,6 @@ errorHandler :: Middleware
 errorHandler app req sendResponse = catches  (app req sendResponse)
     [
         Handler (\ (ex :: ConflictException)        -> handleWithStatus sendResponse ex status409),
-        Handler (\ (ex :: FormatException)          -> handleWithStatus sendResponse ex status400),
+        Handler (\ (ex :: FormatException)          -> handleWithStatus sendResponse ex status400),        
         Handler (\ (ex :: UnauthorizedException)    -> handleWithStatus sendResponse ex status403),
         Handler (\ (ex :: SomeException)            -> handleWithStatus sendResponse ex status500)]

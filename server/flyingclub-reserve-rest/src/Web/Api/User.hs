@@ -11,7 +11,7 @@ import           Web.Authentication
 
 
 getUsersR :: Handler ReserveRoute
-getUsersR = authorizedRoute (U.getUsers)
+getUsersR = authorizedRoute (U.getUsersDetails)
 
 getUserR :: Key User -> Handler ReserveRoute
 getUserR uid = authorizedRoute (U.getUserDetails uid)

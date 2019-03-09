@@ -53,7 +53,7 @@ login username password = do
             let validUser = case user of
                   Nothing -> False
                   Just u  -> not (isDeleted u) && userPermission u /= NoAccess
-            -- verify password
+            -- verify password            
             allow <- verifyPassword userId password
             if (not allow) || (not validUser)
               then return Nothing
