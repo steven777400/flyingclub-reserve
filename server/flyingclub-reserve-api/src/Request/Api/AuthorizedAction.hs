@@ -56,7 +56,7 @@ instance Semigroup (AuthorizedAction a) where
 
 runAuthorizedAction :: Key User -> AuthorizedAction o -> SqlM o
 runAuthorizedAction userId (AuthorizedAction auth) = do
-    user <-  A.getOrNotFound userId
+    user <-  A.getNotDeletedOrNotFound userId
     res <- auth user
     case res of
       Just r1 -> return r1

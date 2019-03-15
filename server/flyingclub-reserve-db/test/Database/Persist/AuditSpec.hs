@@ -123,3 +123,25 @@ spec = do
             r1 <- liftIO $ ReservationKey <$> (randomIO :: IO UUID)
             A.update i1 r1 [ReservationUserId =. i1]
             ) `shouldThrow` anyException
+
+        it "gives brief history" $ runInDb $ do
+            i1 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
+            insertKey i1 sampleUser
+            i2 <- liftIO $ UserKey <$> (randomIO :: IO UUID)
+            insertKey i2 sampleUser
+            ak1 <- A.insert i1 $ Airplane "N54073" "Goat!" Nothing
+            ak2 <- A.insert i1 $ Airplane "N75898" "Goat!" Nothing
+            t <- liftIO getCurrentTime
+            let t' = addUTCTime (10000) t
+            let r1data = Reservation i1 ak2 t t False "" Nothing
+            r1 <- A.insert i1 $ r1data
+
+            bh1 <- A.briefHistory r1
+            liftIO $ A.isUpdated bh1 `shouldBe` False 
+            liftIO $ (toJSON $ A.actionBy bh1) `shouldBe` toJSON (Entity i1 sampleUser)
+
+            r2 <- A.update i2 r1 [ReservationUserId =. i2, ReservationAirplaneId =. ak2, ReservationEnd =. t']
+    
+            bh2 <- A.briefHistory r1
+            liftIO $ A.isUpdated bh2 `shouldBe` True 
+            liftIO $ (toJSON $ A.actionBy bh2) `shouldBe` toJSON (Entity i2 sampleUser)

@@ -52,7 +52,7 @@ getUserDetails userId =
      getUD)
   where
     getUD = do
-      user <- getOrNotFound userId
+      user <- getNotDeletedOrNotFound userId
       addrs <- DB.selectList [ownedBy userId, notDeleted] []
       phones <- DB.selectList [ownedBy userId, notDeleted] []
       emails <- DB.selectList [ownedBy userId, notDeleted] []

@@ -58,13 +58,25 @@ spec = do
             liftIO $ length users2 `shouldBe` 2
 
             A.delete i1 i2
-
-            users3 <- runAuthorizedAction i2 getUsers -- with pilot
-            liftIO $ length users3 `shouldBe` 1
-
+            
             users3' <- runAuthorizedAction i1 getUsers -- with officer
-            liftIO $ length users3' `shouldBe` 1
+            liftIO $ length users3' `shouldBe` 1             
+        it "throws when deleted user request" $ (runInDb $ do
 
+                i1 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
+                insertKey i1 sampleOfficerUser
+                users <- runAuthorizedAction i1 getUsers
+                liftIO $ length users `shouldBe` 1
+
+                i2 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
+                insertKey i2 samplePilotUser
+                users2 <- runAuthorizedAction i1 getUsers
+                liftIO $ length users2 `shouldBe` 2
+
+                A.delete i1 i2
+
+                runAuthorizedAction i2 getUsers
+            ) `shouldThrow` anyException
         it "throws for na users" $ (runInDb $ do
             i3 <- liftIO $ S.UserKey <$> (randomIO :: IO UUID)
             insertKey i3 sampleNAUser

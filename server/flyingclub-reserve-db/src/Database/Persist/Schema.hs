@@ -25,6 +25,7 @@ import           Database.Persist.Types.PIN
 import           Database.Persist.Types.UserType
 import           Database.Persist.Types.UUID
 import           GHC.Generics
+import           System.IO (FilePath)
 
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
@@ -87,15 +88,23 @@ Reservation
     deleted     UTCTime Maybe
     deriving Show Generic
 Currency
-    Id          UUID
-    userId      UserId
-    name        T.Text -- if a user has multiple family members, this could just be a descriptive field
-    flightReview    Day Maybe
-    medical         Day Maybe
+    Id                      UUID
+    userId                  UserId
+    name                    T.Text -- if a user has multiple family members, this could just be a descriptive field
+    flightReview            Day Maybe
+    medical                 Day Maybe
     overrideMedicalLength   Int Maybe
-    dateOfBirth     Day    
-    comment     T.Text -- for officers only
-    deleted     UTCTime Maybe
+    dateOfBirth             Day    
+    comment                 T.Text -- for officers only
+    deleted                 UTCTime Maybe
+    deriving Show Generic
+Document
+    Id                  UUID   
+    associatedUserId    UserId Maybe
+    path                FilePath
+    originalFileName    T.Text
+    comment             T.Text 
+    deleted             UTCTime Maybe
     deriving Show Generic
 Notification
     Id          UUID

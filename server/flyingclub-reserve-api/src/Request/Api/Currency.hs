@@ -22,6 +22,7 @@ import           Request.Api.AuthorizedAction
 import           System.Random
 
 
+-- todo: this needs to be grouped by user
 getCurrencies :: AuthorizedAction [DB.Entity S.Currency]
 getCurrencies = authorize Officer $ const $ DB.selectList [notDeleted] []
 

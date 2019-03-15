@@ -1,6 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 module Database.Persist.Audit.Operations (isDeleted, notDeleted,
   insert, delete, update, getOrNotFound, getNotDeletedOrNotFound, 
+  BriefHistory(..), briefHistory,
   filterE, mapE) where
 
 import           Control.Exception.StackError
@@ -14,6 +15,7 @@ import           Database.Persist.Schema
 import           Database.Persist.Sql         ((=.), (==.))
 import           Database.Persist.Types
 import           Database.Persist.Types.UUID
+import qualified Database.Persist.Types       (SelectOpt(Desc, LimitTo))
 import           Prelude                      hiding (error)
 import           System.Random
 
@@ -74,6 +76,25 @@ getNotDeletedOrNotFound objId = do
     item <- getOrNotFound objId
     if isDeleted (entityVal item) then error $ "accessed deleted object " ++ show objId
       else return item
+
+data BriefHistory = BriefHistory {
+    isUpdated :: Bool,
+    actionBy :: Entity User,
+    actionOn :: UTCTime    
+    }
+    
+
+briefHistory :: A.Audit a => Key a -> SqlM BriefHistory
+briefHistory objId = do    
+    audits <- DB.selectList [AuditObjectId ==. A.fromKey objId] [Desc AuditWhen, LimitTo 2]    
+    case audits of
+        []    -> error "no audit history"        
+        (Entity _ x:xs) -> do
+            u <- getOrNotFound (auditUserId x)
+            let isUpdated = length xs > 0
+            return $ BriefHistory isUpdated u (auditWhen x)
+
+
 
 filterE :: (a -> Bool) -> [Entity a] -> [Entity a]
 filterE f = filter (\(Entity _ v) -> f v)
