@@ -19,6 +19,7 @@ import           Data.Time.Clock
 import qualified Database.Persist.Audit.Class       as A
 import           Database.Persist.Sql
 import           Database.Persist.TH
+import           Database.Persist.Types.DocumentScope
 import qualified Database.Persist.Types.JSON        as JSON
 import           Database.Persist.Types.PhoneNumber
 import           Database.Persist.Types.PIN
@@ -101,9 +102,11 @@ Currency
 Document
     Id                  UUID   
     associatedUserId    UserId Maybe
+    scope               DocumentScope
+    fileId              UUID
     path                FilePath
-    originalFileName    T.Text
-    comment             T.Text 
+    originalFileName    FilePath    
+    comment             T.Text     
     deleted             UTCTime Maybe
     deriving Show Generic
 Notification
@@ -210,6 +213,16 @@ instance A.Audit Currency where
     fromKey = unCurrencyKey
     deleteField = CurrencyDeleted
     deleted = currencyDeleted
-        
+
+instance ToJSON Document where
+instance FromJSON Document where
+instance A.Audit Document where
+    toKey = DocumentKey
+    fromKey = unDocumentKey
+    deleteField = DocumentDeleted
+    deleted = documentDeleted
+    
+
 instance ToJSON Session where
 instance FromJSON Session where
+
